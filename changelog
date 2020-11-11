@@ -1,0 +1,5 @@
+v0.1.5
+
+- Upgrade nash protocol adding support for Noia markets
+- Change to new callback based subscriptions
+- Add support for post_only orders

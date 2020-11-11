@@ -1,0 +1,8 @@
+.vscode/
+bin/
+obj/
+*.dylib
+target/
+*.dll
+*.so
+*.DS_STORE

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Openlimits</PackageId>
+    <Version>0.1.5</Version>
+    <Authors>jankjr</Authors>
+    <Company>nash</Company>
+    <PackageTags>Nash;Openlimits;Trading;Cryptocurrency</PackageTags>
+    <Description>
+      This is the offical openlimits c# wrapper.
+    </Description>
+  </PropertyGroup>
+   <PropertyGroup>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="libopenlimits_sharp.dll" Pack="true" PackagePath="runtimes\win10-x64\native" />
+    <None Include="libopenlimits_sharp.so" Pack="true" PackagePath="runtimes\linux-x64\native" />
+    <None Include="libopenlimits_sharp.dylib" Pack="true" PackagePath="runtimes\osx\native" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LICENSE.txt" Pack="true" PackagePath="LICENSE.txt"/>
+  </ItemGroup>
+</Project>
