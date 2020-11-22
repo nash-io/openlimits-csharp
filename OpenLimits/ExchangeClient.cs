@@ -228,7 +228,6 @@ namespace OpenLimits
         unsafe private void onOrderbookHandler(ulong bidActualValueLen, ulong askActualValueLen, IntPtr marketStr) {
             var market = CString.ToString(marketStr);
             FreeString(marketStr);
-            System.Console.WriteLine(market);
            
             var bidsList = new List<AskBid>();
             var asksList = new List<AskBid>();
