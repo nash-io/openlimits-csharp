@@ -297,8 +297,8 @@ namespace OpenLimits
             return price;
         }
         unsafe public OrderbookResponse Orderbook(string market) {
-            var bids = new AskBid[128];
-            var asks = new AskBid[128];
+            var bids = new AskBid[512];
+            var asks = new AskBid[512];
             var bidsLen = bids.Length;
             var asksLen = asks.Length;
             var bidsList = new List<AskBid>();
@@ -313,10 +313,10 @@ namespace OpenLimits
                         (IntPtr)bidBuff, (UIntPtr)bidsLen, out var actualBidsLen,
                         (IntPtr)askBuff, (UIntPtr)asksLen, out var actualAsksLen
                     ));
-                    for (int i = 0 ; i < (int)actualBidsLen ; i ++) {
+                    for (int i = 0 ; i < Math.Min(bidsLen, (int)actualBidsLen) ; i ++) {
                         bidsList.Add(bids[i]);
                     }
-                    for (int i = 0 ; i < (int)actualAsksLen ; i ++) {
+                    for (int i = 0 ; i < Math.Min(asksLen, (int)actualAsksLen) ; i ++) {
                         asksList.Add(asks[i]);
                     }
                 }

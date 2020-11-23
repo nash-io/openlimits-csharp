@@ -645,13 +645,13 @@ pub  extern "cdecl" fn order_book(
       let ffi_bids: Vec<FFIAskBid> = resp.bids.iter().map(to_ffi_ask_bid).collect();
       let l = std::cmp::min(bids_buff_len, ffi_bids.len());
       bids[0..l].copy_from_slice(&ffi_bids[0..l]);
-      (*actual_bids_buff_len) = ffi_bids.len();
+      (*actual_bids_buff_len) = l;
   
       let asks = std::slice::from_raw_parts_mut::<FFIAskBid>(asks_buff, asks_buff_len);
       let ffi_asks: Vec<FFIAskBid> = resp.asks.iter().map(to_ffi_ask_bid).collect();
       let l = std::cmp::min(asks_buff_len, ffi_asks.len());
       asks[0..l].copy_from_slice(&ffi_asks[0..l]);
-      (*actual_asks_buff_len) = ffi_asks.len();
+      (*actual_asks_buff_len) = l;
     };
     Ok(())
   };
@@ -784,7 +784,7 @@ pub  extern "cdecl" fn get_historic_trades(
       let ffi_trades: Vec<FFITrade> = resp.iter().map(to_ffi_trade).collect();
       let l = std::cmp::min(buff_len, ffi_trades.len());
       trades[0..l].copy_from_slice(&ffi_trades[0..l]);
-      (*actual_buff_len) = ffi_trades.len();
+      (*actual_buff_len) = l;
       Ok(())
     }
   };
@@ -1199,7 +1199,6 @@ pub  extern "cdecl" fn init_subscriptions(
           break;
         },
         Some(SubthreadCmd::Sub(sub)) => {
-
           match rt.block_on(client.subscribe(sub.clone(), move |resp| {
             let out_asks = unsafe { std::slice::from_raw_parts_mut::<FFIAskBid>(asks_buff.0, asks_buff_len) };
             let out_bids = unsafe { std::slice::from_raw_parts_mut::<FFIAskBid>(bids_buff.0, bids_buff_len) };
