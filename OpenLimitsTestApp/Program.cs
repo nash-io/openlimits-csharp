@@ -21,18 +21,18 @@ namespace OpenLimitsTestApp
 
         static public void Main(string[] args)
         {
-            var secret = "";
-            var apikey = "";
             
-            NashClientConfig config = NashClientConfig.Authenticated(apikey, secret, 0, NashEnvironment.Sandbox, 1000);
+            NashClientConfig config = NashClientConfig.Unauthenticated(0, NashEnvironment.Production, 1000);
             var client = new ExchangeClient(config);
 
             Console.WriteLine("Available markets");
             foreach(var market in client.ReceivePairs()) {
-                Console.WriteLine("Market: " + market.quote);
+                Console.WriteLine("Market: " + market.symbol);
+                PrintBook(client.Orderbook(market.symbol));
             }
             
             Console.WriteLine("Listening to the btc_usdc market");
+            PrintBook(client.Orderbook("btc_usdc"));
             client.SubscribeToOrderbook("btc_usdc", PrintBook);
             
             // Noia markets only available in NashEnvironment.Production

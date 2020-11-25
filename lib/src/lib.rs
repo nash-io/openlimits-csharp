@@ -55,6 +55,8 @@ pub struct FFIMarketPair {
   symbol: *mut c_char,
   base_increment: *mut c_char,
   quote_increment: *mut c_char,
+  base_min_price: *mut c_char,
+  quote_min_price: *mut c_char,
 }
 
 fn interval_from_string(
@@ -129,12 +131,17 @@ fn to_ffi_balance(b: Balance) -> FFIBalance {
 }
 
 fn market_pair_to_ffi(pair: MarketPair) -> FFIMarketPair {
+  let base_min_price = pair.min_base_trade_size.map(|f|string_to_c_str(f.to_string())).unwrap_or(std::ptr::null_mut());
+  let quote_min_price = pair.min_quote_trade_size.map(|f|string_to_c_str(f.to_string())).unwrap_or(std::ptr::null_mut());
+
   FFIMarketPair {
     base: string_to_c_str(pair.base),
     quote: string_to_c_str(pair.quote),
     symbol: string_to_c_str(pair.symbol),
     base_increment: string_to_c_str(pair.base_increment.to_string()),
     quote_increment: string_to_c_str(pair.quote_increment.to_string()),
+    base_min_price,
+    quote_min_price,
   }
 }
 
@@ -573,6 +580,7 @@ pub  extern "cdecl" fn init_nash(
   client_id: u64,
   environment: FFINashEnv,
   timeout: u64,
+  affiliate_code: *mut c_char,
 )  -> *mut ExchangeClient {
   let mut credentials: Option<NashCredentials> = None;
   if !apikey.is_null() && !secret.is_null() {
@@ -589,7 +597,10 @@ pub  extern "cdecl" fn init_nash(
     FFINashEnv::Sandbox => Environment::Sandbox,
   };
 
+  let affiliate_code = nullable_cstr(affiliate_code).unwrap();
+
   let nash_params =  NashParameters {
+    affiliate_code,
     credentials,
     client_id,
     timeout,

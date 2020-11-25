@@ -101,8 +101,14 @@ namespace OpenLimits
         unsafe private IntPtr _sub_handle;
 
         [DllImport(NativeLib, EntryPoint = "free_string", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe internal static extern void FreeString(IntPtr handle);
-
+        unsafe private static extern void FreeStringInternal(IntPtr handle);
+        static public void FreeString(IntPtr handle) {
+            if (handle.ToInt64() == 0) {
+                return;
+            }
+            FreeStringInternal(handle);
+        }
+        
         
         [DllImport(NativeLib, EntryPoint = "disconnect", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         unsafe internal static extern void Disconnect(IntPtr subhandle);
@@ -111,7 +117,7 @@ namespace OpenLimits
         unsafe private static extern void* InitBinance(BinanceClientConfig config);
 
         [DllImport(NativeLib, EntryPoint = "init_nash", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern void* InitNash(string apikey, string secret, ulong clientid, NashEnvironment environment, ulong timeout);
+        unsafe private static extern void* InitNash(string apikey, string secret, ulong clientid, NashEnvironment environment, ulong timeout, string affiliateCode);
         
         
         [DllImport(NativeLib, EntryPoint = "init_subscriptions", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
@@ -288,7 +294,7 @@ namespace OpenLimits
         }
 
         unsafe public ExchangeClient(NashClientConfig config) {
-            _client_handle = ExchangeClient.InitNash(config.apikey, config.secret, config.clientId, config.environment, config.timeout);
+            _client_handle = ExchangeClient.InitNash(config.apikey, config.secret, config.clientId, config.environment, config.timeout, config.affiliateCode);
             _sub_handle = InitCbs();
         }
 

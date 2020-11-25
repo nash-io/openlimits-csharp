@@ -1,3 +1,9 @@
+v0.1.8
+
+- Add support for affiliate code for nash using `NashClientConfig.Authenticated("NASH_API_KEY", "NASH_SECRET", "AFFILIATE_CODE", 0, NashEnvironment.Sandbox, 1000)
+- Fix memory leak
+- Expose market min trades
+
 v0.1.5
 
 - Upgrade nash protocol adding support for Noia markets

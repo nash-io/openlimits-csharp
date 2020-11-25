@@ -6,6 +6,9 @@ namespace OpenLimits
 
     public class CString {
         public static string ToString(IntPtr handle) {
+            if (handle.ToInt64() == 0) {
+                return null;
+            }
             int len = 0;
             while (Marshal.ReadByte(handle,len) != 0) { ++len; }
             byte[] buffer = new byte[len];
