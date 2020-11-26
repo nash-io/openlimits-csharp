@@ -84,7 +84,7 @@ namespace OpenLimits
         public delegate void OnPing();
         private delegate void OnDisconnect();
         public delegate void OnOrderbook(OrderbookResponse orderbook);
-        unsafe private delegate void OnOrderbookFFI(ulong bidActualValueLen, ulong askActualValueLen, IntPtr market);
+        unsafe private delegate void OnOrderbookFFI(ulong bidActualValueLen, ulong askActualValueLen, IntPtr market, ulong lastUpdateId, ulong updateId);
         public delegate void OnTrades(TradesResponse trades);
         private delegate void OnTradesFFI(ulong bidActualValueLen, IntPtr market);
         private OnError onErrorCB;
@@ -131,8 +131,10 @@ namespace OpenLimits
 
         [DllImport(NativeLib, EntryPoint = "order_book", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         unsafe private static extern FFIResult Orderbook(void* client, string market,
-            IntPtr bidBuffPtr, UIntPtr bidBufLen, out UIntPtr bidActualValueLen,
-            IntPtr askBuffPtr, UIntPtr AskBufLen, out UIntPtr askActualValueLen
+            IntPtr bidBuffPtr, ulong bidBufLen, out ulong bidActualValueLen,
+            IntPtr askBuffPtr, ulong AskBufLen, out ulong askActualValueLen,
+            out ulong lastUpdateId,
+            out ulong updateId
         );
 
         [DllImport(NativeLib, EntryPoint = "get_price_ticker", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
@@ -231,7 +233,7 @@ namespace OpenLimits
                 callback(trades);
             }
         }
-        unsafe private void onOrderbookHandler(ulong bidActualValueLen, ulong askActualValueLen, IntPtr marketStr) {
+        unsafe private void onOrderbookHandler(ulong bidActualValueLen, ulong askActualValueLen, IntPtr marketStr, ulong lastUpdateId, ulong updateId) {
             var market = CString.ToString(marketStr);
             FreeString(marketStr);
            
@@ -253,7 +255,9 @@ namespace OpenLimits
             var latestOrderbook = new OrderbookResponse(
                 market,
                 asksList,
-                bidsList
+                bidsList,
+                lastUpdateId,
+                updateId
             );
 
             this.onOrderbookCbs.TryGetValue(market, out var callbacks);
@@ -309,16 +313,21 @@ namespace OpenLimits
             var asksLen = asks.Length;
             var bidsList = new List<AskBid>();
             var asksList = new List<AskBid>();
-            
+            ulong lastUpdateId = 0;
+            ulong updateId = 0;
 
             fixed (AskBid* bidBuff = bids.AsSpan()) {
                 fixed (AskBid* askBuff = asks.AsSpan()) {
-                    handleResult(ExchangeClient.Orderbook(
-                        _client_handle,
-                        market,
-                        (IntPtr)bidBuff, (UIntPtr)bidsLen, out var actualBidsLen,
-                        (IntPtr)askBuff, (UIntPtr)asksLen, out var actualAsksLen
-                    ));
+                    handleResult(
+                        ExchangeClient.Orderbook(
+                            _client_handle,
+                            market,
+                            (IntPtr)bidBuff, (ulong) bidsLen, out var actualBidsLen,
+                            (IntPtr)askBuff, (ulong) asksLen, out var actualAsksLen,
+                            out lastUpdateId,
+                            out updateId
+                        )
+                    );
                     for (int i = 0 ; i < Math.Min(bidsLen, (int)actualBidsLen) ; i ++) {
                         bidsList.Add(bids[i]);
                     }
@@ -331,7 +340,9 @@ namespace OpenLimits
             return new OrderbookResponse(
                 market,
                 asksList,
-                bidsList
+                bidsList,
+                lastUpdateId,
+                updateId
             );
         }
 

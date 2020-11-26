@@ -629,8 +629,10 @@ pub  extern "cdecl" fn init_nash(
 pub  extern "cdecl" fn order_book(
   client: *mut ExchangeClient,
   market: *mut c_char,
-  bids_buff: *mut FFIAskBid, bids_buff_len: usize, actual_bids_buff_len: Out<usize>,
-  asks_buff: *mut FFIAskBid, asks_buff_len: usize, actual_asks_buff_len: Out<usize>
+  bids_buff: *mut FFIAskBid, bids_buff_len: u64, actual_bids_buff_len: Out<u64>,
+  asks_buff: *mut FFIAskBid, asks_buff_len: u64, actual_asks_buff_len: Out<u64>,
+  last_update_id: Out<u64>,
+  update_id: Out<u64>,
 ) -> OpenLimitsResult {
   let call = move|| -> Result<(), OpenlimitsSharpError>{
     if client.is_null() {
@@ -652,17 +654,19 @@ pub  extern "cdecl" fn order_book(
         (*client).client.order_book(&req)
       )?;
   
-      let bids = std::slice::from_raw_parts_mut::<FFIAskBid>(bids_buff, bids_buff_len);
+      let bids = std::slice::from_raw_parts_mut::<FFIAskBid>(bids_buff, bids_buff_len as usize);
       let ffi_bids: Vec<FFIAskBid> = resp.bids.iter().map(to_ffi_ask_bid).collect();
-      let l = std::cmp::min(bids_buff_len, ffi_bids.len());
+      let l = std::cmp::min(bids_buff_len as usize, ffi_bids.len() as usize);
       bids[0..l].copy_from_slice(&ffi_bids[0..l]);
-      (*actual_bids_buff_len) = l;
+      (*actual_bids_buff_len) = l as u64;
   
-      let asks = std::slice::from_raw_parts_mut::<FFIAskBid>(asks_buff, asks_buff_len);
+      let asks = std::slice::from_raw_parts_mut::<FFIAskBid>(asks_buff, asks_buff_len as usize);
       let ffi_asks: Vec<FFIAskBid> = resp.asks.iter().map(to_ffi_ask_bid).collect();
-      let l = std::cmp::min(asks_buff_len, ffi_asks.len());
+      let l = std::cmp::min(asks_buff_len as usize, ffi_asks.len() as usize);
       asks[0..l].copy_from_slice(&ffi_asks[0..l]);
-      (*actual_asks_buff_len) = l;
+      (*actual_asks_buff_len) = l as u64;
+      (*last_update_id) = resp.last_update_id.unwrap_or_default();
+      (*update_id) = resp.update_id.unwrap_or_default();
     };
     Ok(())
   };
@@ -1177,7 +1181,7 @@ pub  extern "cdecl" fn init_subscriptions(
   client: *mut ExchangeClient,
   on_error: extern fn(),
   on_ping: extern fn(),
-  on_orderbook: extern fn(bids_len: u64, asks_len: u64, market: *mut c_char),
+  on_orderbook: extern fn(bids_len: u64, asks_len: u64, market: *mut c_char, last_update_id: u64, update_id: u64),
   on_trades: extern fn(buff_len: u64, market: *mut c_char),
   on_disconnet: extern fn(),
   bids_buff: FFIAskBidBox, bids_buff_len: usize,
@@ -1253,7 +1257,13 @@ pub  extern "cdecl" fn init_subscriptions(
                 for (i, ask) in resp.asks.iter().enumerate() {
                   out_asks[i] = to_ffi_ask_bid(ask);
                 }
-                on_orderbook(resp.bids.len() as u64, resp.asks.len() as u64, string_to_c_str(market.clone()));
+                on_orderbook(
+                  resp.bids.len() as u64,
+                  resp.asks.len() as u64,
+                  string_to_c_str(market.clone()),
+                  resp.last_update_id.unwrap_or_default(),
+                  resp.update_id.unwrap_or_default()
+                );
               },
               OpenLimitsWebSocketMessage::OrderBookDiff(resp) => {
                 let market = match sub.clone() {
@@ -1266,7 +1276,13 @@ pub  extern "cdecl" fn init_subscriptions(
                 for (i, ask) in resp.asks.iter().enumerate() {
                   out_asks[i] = to_ffi_ask_bid(ask);
                 }
-                on_orderbook(resp.bids.len() as u64, resp.asks.len() as u64, string_to_c_str(market.clone()));
+                on_orderbook(
+                  resp.bids.len() as u64,
+                  resp.asks.len() as u64,
+                  string_to_c_str(market.clone()),
+                  resp.last_update_id.unwrap_or_default(),
+                  resp.update_id.unwrap_or_default()
+                );
               }
             };
 
