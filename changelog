@@ -2,7 +2,9 @@ v0.1.8
 
 - Add support for affiliate code for nash using `NashClientConfig.Authenticated("NASH_API_KEY", "NASH_SECRET", "AFFILIATE_CODE", 0, NashEnvironment.Sandbox, 1000)
 - Fix memory leak
-- Expose market min trades
+- Expose market minimum trade sizes for markets
+- Expose last_update_id and update_id for orderbooks to support proper orderbook synchronization
+
 
 v0.1.5
 
