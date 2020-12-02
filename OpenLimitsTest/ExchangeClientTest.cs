@@ -61,6 +61,8 @@ namespace OpenLimitsTest
             TestContext.Progress.WriteLine("Limit buy: " + client.LimitBuy(LimitOrderRequest.goodTillCancelled("6500.0", "0.01000", "btc_usdc")));
             TestContext.Progress.WriteLine("Limit buy fok: " + client.LimitSell(LimitOrderRequest.fillOrKill("6500.0", "0.01000", "btc_usdc")));
             TestContext.Progress.WriteLine("Limit buy ioc: " + client.LimitSell(LimitOrderRequest.immediateOrCancel("6500.0", "0.01000", "btc_usdc")));
+            TestContext.Progress.WriteLine("Market sell: " + client.MarketSell(new MarketOrderRequest("0.01000", "btc_usdc")));
+            TestContext.Progress.WriteLine("Market sell inverse: " + client.MarketSell(new MarketOrderRequest("20", "usdc_btc")));
             client.CancelAllOrders("btc_usdc");
         }
     }

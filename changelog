@@ -1,3 +1,8 @@
+v0.1.9
+
+- Upgrade to newest version of  openlimits
+- Enable market sell orders for Nash
+
 v0.1.8
 
 - Add support for affiliate code for nash using `NashClientConfig.Authenticated("NASH_API_KEY", "NASH_SECRET", "AFFILIATE_CODE", 0, NashEnvironment.Sandbox, 1000)
