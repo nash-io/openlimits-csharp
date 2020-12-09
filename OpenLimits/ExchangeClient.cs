@@ -120,6 +120,10 @@ namespace OpenLimits
         unsafe private static extern FFIResult InitNash(string apikey, string secret, ulong clientid, NashEnvironment environment, ulong timeout, string affiliateCode, out IntPtr client);
         
         
+        [DllImport(NativeLib, EntryPoint = "init_coinbase", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        unsafe private static extern FFIResult InitCoinbase(string apikey, string secret, string passphrase, bool sandbox, out IntPtr client);
+        
+        
         [DllImport(NativeLib, EntryPoint = "init_subscriptions", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         unsafe private static extern FFIResult InitCbs(IntPtr client,
             OnError onError, OnPing onPing, OnOrderbookFFI onOrderbook, OnTradesFFI onTrades, OnDisconnect onDisconnect,
@@ -311,6 +315,13 @@ namespace OpenLimits
         unsafe public ExchangeClient(NashClientConfig config) {
             handleResult(
                 ExchangeClient.InitNash(config.apikey, config.secret, config.clientId, config.environment, config.timeout, config.affiliateCode, out var client_handle)
+            );
+            _client_handle = client_handle;
+            _sub_handle = InitCbs();
+        }
+        unsafe public ExchangeClient(CoinbaseClientConfig config) {
+            handleResult(
+                ExchangeClient.InitCoinbase(config.apikey, config.secret, config.passphrase, config.sandbox, out var client_handle)
             );
             _client_handle = client_handle;
             _sub_handle = InitCbs();
