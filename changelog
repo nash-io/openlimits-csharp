@@ -1,3 +1,11 @@
+v0.1.10
+
+- Upgrade to newest version of  openlimits
+- Add support for coinbase
+- Improve error handling
+- Make initialization fail gracefully
+- Add Interval enum instead of using strings
+
 v0.1.9
 
 - Upgrade to newest version of  openlimits
