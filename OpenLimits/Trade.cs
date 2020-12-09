@@ -8,7 +8,8 @@ namespace OpenLimits
     [StructLayout(LayoutKind.Sequential)]
     internal struct FFITrade {
         public readonly IntPtr id;
-        public readonly IntPtr orderId;
+        public readonly IntPtr buyerOrderId;
+        public readonly IntPtr sellerOrderId;
         public readonly IntPtr marketPair;
 
         public readonly double price;
@@ -20,14 +21,16 @@ namespace OpenLimits
 
         public void Dispose() {
             ExchangeClient.FreeString(id);
-            ExchangeClient.FreeString(orderId);
+            ExchangeClient.FreeString(buyerOrderId);
+            ExchangeClient.FreeString(sellerOrderId);
             ExchangeClient.FreeString(marketPair);
         }
 
         public Trade ToTrade() {
             return new Trade(
                 CString.ToString(this.id),
-                CString.ToString(this.orderId),
+                CString.ToString(this.buyerOrderId),
+                CString.ToString(this.sellerOrderId),
                 CString.ToString(this.marketPair),
                 this.price,
                 this.qty,
@@ -41,7 +44,8 @@ namespace OpenLimits
 
     public struct Trade {
         public readonly string id;
-        public readonly string orderId;
+        public readonly string buyerOrderId;
+        public readonly string sellerOrderId;
         public readonly string marketPair;
         public readonly double price;
         public readonly double qty;
@@ -50,10 +54,11 @@ namespace OpenLimits
         public readonly Liquidity liquidity;
         public readonly ulong createdAt;
 
-        public Trade(string id, string orderId, string marketPair, double price, double qty, double fees, Side side, Liquidity liquidity, ulong createdAt)
+        public Trade(string id, string buyerOrderId, string sellerOrderId, string marketPair, double price, double qty, double fees, Side side, Liquidity liquidity, ulong createdAt)
         {
             this.id = id;
-            this.orderId = orderId;
+            this.buyerOrderId = buyerOrderId;
+            this.sellerOrderId = sellerOrderId;
             this.marketPair = marketPair;
             this.price = price;
             this.qty = qty;
@@ -67,7 +72,8 @@ namespace OpenLimits
         {
             return "Trade{" +
                 "id='" + id + '\'' +
-                ", order_id='" + orderId + '\'' +
+                ", buyer_order_id='" + buyerOrderId + '\'' +
+                ", seller_order_id='" + sellerOrderId + '\'' +
                 ", market_pair='" + marketPair + '\'' +
                 ", price=" + price +
                 ", qty=" + qty +

@@ -20,14 +20,14 @@ namespace OpenLimitsTest
             TestContext.Progress.WriteLine("Testing error handling");
             Assert.Throws<BinanceError>(
                 delegate { 
-                    client.GetHistoricRates(new GetHistoricRatesRequest("sadsdqwe", "OneHour"));
+                    client.GetHistoricRates(new GetHistoricRatesRequest("sadsdqwe", Interval.OneHour));
                 }
             );
 
             TestContext.Progress.WriteLine("Orderbook " + client.Orderbook("BNBBTC"));
             TestContext.Progress.WriteLine("GetAccountBalances " + client.GetAccountBalances());
-            TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricRates(new GetHistoricRatesRequest("BNBBTC", "OneHour")));
-            TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricRates(new GetHistoricRatesRequest("BNBBTC", "OneHour")));
+            TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricRates(new GetHistoricRatesRequest("BNBBTC", Interval.OneHour)));
+            TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricRates(new GetHistoricRatesRequest("BNBBTC", Interval.OneHour)));
             TestContext.Progress.WriteLine("GetAllOpenOrders: " + client.GetAllOpenOrders());
             TestContext.Progress.WriteLine("GetOrderHistory BNBBTC: " + client.GetOrderHistory(new GetOrderHistoryRequest("BNBBTC")));
             TestContext.Progress.WriteLine("Limit buy: " + client.LimitBuy(LimitOrderRequest.goodTillCancelled("0.001", "1", "BNBBTC")));
@@ -64,6 +64,30 @@ namespace OpenLimitsTest
             TestContext.Progress.WriteLine("Market sell: " + client.MarketSell(new MarketOrderRequest("0.01000", "btc_usdc")));
             TestContext.Progress.WriteLine("Market sell inverse: " + client.MarketSell(new MarketOrderRequest("20", "usdc_btc")));
             client.CancelAllOrders("btc_usdc");
+        }
+
+        [Test]
+        public void TestCoinbase()
+        {
+            CoinbaseClientConfig config = CoinbaseClientConfig.Authenticated(
+                Environment.GetEnvironmentVariable("COINBASE_API_KEY"),
+                Environment.GetEnvironmentVariable("COINBASE_API_SECRET"),
+                Environment.GetEnvironmentVariable("COINBASE_PASSPHRASE"),
+                true
+            );
+            
+            var client = new ExchangeClient(config);
+
+            TestContext.Progress.WriteLine("Orderbook " + client.Orderbook("ETH-BTC"));
+            TestContext.Progress.WriteLine("ReceivePairs " + client.ReceivePairs());
+            TestContext.Progress.WriteLine("GetAccountBalances " + client.GetAccountBalances());
+            TestContext.Progress.WriteLine("GetOrderHistory ETH-BTC: " + client.GetOrderHistory(new GetOrderHistoryRequest("ETH-BTC")));
+            client.CancelAllOrders("ETH-BTC");
+            TestContext.Progress.WriteLine("Limit sell: " + client.LimitSell(LimitOrderRequest.goodTillCancelled("0.001", "1", "ETH-BTC")));
+            TestContext.Progress.WriteLine("Limit buy: " + client.LimitBuy(LimitOrderRequest.goodTillCancelled("0.001", "1", "ETH-BTC")));
+            // TestContext.Progress.WriteLine("Limit buy fok: " + client.LimitSell(LimitOrderRequest.fillOrKill("0.001", "1", "ETH-BTC")));
+            TestContext.Progress.WriteLine("Limit buy ioc: " + client.LimitSell(LimitOrderRequest.immediateOrCancel("0.001", "1", "ETH-BTC")));
+            client.CancelAllOrders("ETH-BTC");
         }
     }
 }

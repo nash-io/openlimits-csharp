@@ -16,4 +16,4 @@ chrono = { version = "0.4.11" }
 futures-util = "0.3"
 thiserror = "1.0.22"
 rust_decimal = "1.7.0"
-openlimits = { version = "0.1.5" }
+openlimits = { rev = "3764ac1702c213f61c2de0ad53bac98987582f90", git = "https://github.com/nash-io/openlimits" }

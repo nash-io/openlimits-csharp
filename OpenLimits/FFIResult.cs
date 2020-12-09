@@ -40,7 +40,11 @@ namespace OpenLimits
         UnkownResponse,
         NotParsableResponse,
         MissingParameter,
-        WebSocketMessageNotSupported
+        WebSocketMessageNotSupported,
+
+        InitializeException,
+        SubscribeException,
+        NoMarketPair
     }
 
     public class OpenLimitsError: Exception {
@@ -125,5 +129,15 @@ namespace OpenLimits
     };
     public class WebSocketMessageNotSupported : OpenLimitsError {
         public WebSocketMessageNotSupported(string message): base(message) { }
+    };
+
+    public class InitializeException : OpenLimitsError {
+        public InitializeException(string message): base(message) { }
+    };
+    public class SubscribeException : OpenLimitsError {
+        public SubscribeException(string message): base(message) { }
+    };
+    public class NoMarketPair : OpenLimitsError {
+        public NoMarketPair(string message): base(message) { }
     };
 }

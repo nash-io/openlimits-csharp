@@ -97,7 +97,7 @@ namespace OpenLimits
        
         const string NativeLib = "libopenlimits_sharp";
 
-        unsafe private void* _client_handle;
+        unsafe private IntPtr _client_handle;
         unsafe private IntPtr _sub_handle;
 
         [DllImport(NativeLib, EntryPoint = "free_string", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
@@ -114,23 +114,28 @@ namespace OpenLimits
         unsafe internal static extern void Disconnect(IntPtr subhandle);
 
         [DllImport(NativeLib, EntryPoint = "init_binance", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern void* InitBinance(BinanceClientConfig config);
+        unsafe private static extern FFIResult InitBinance(BinanceClientConfig config, out IntPtr client);
 
         [DllImport(NativeLib, EntryPoint = "init_nash", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern void* InitNash(string apikey, string secret, ulong clientid, NashEnvironment environment, ulong timeout, string affiliateCode);
+        unsafe private static extern FFIResult InitNash(string apikey, string secret, ulong clientid, NashEnvironment environment, ulong timeout, string affiliateCode, out IntPtr client);
+        
+        
+        [DllImport(NativeLib, EntryPoint = "init_coinbase", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        unsafe private static extern FFIResult InitCoinbase(string apikey, string secret, string passphrase, bool sandbox, out IntPtr client);
         
         
         [DllImport(NativeLib, EntryPoint = "init_subscriptions", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern IntPtr InitCbs(void* client,
+        unsafe private static extern FFIResult InitCbs(IntPtr client,
             OnError onError, OnPing onPing, OnOrderbookFFI onOrderbook, OnTradesFFI onTrades, OnDisconnect onDisconnect,
             IntPtr bidBuffPtr, UIntPtr bidBufLen,
             IntPtr askBuffPtr, UIntPtr askBufLen,
-            IntPtr taskBuffPtr, UIntPtr tradeBufLen
+            IntPtr taskBuffPtr, UIntPtr tradeBufLen,
+            out IntPtr subhandle
         );
 
 
         [DllImport(NativeLib, EntryPoint = "order_book", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult Orderbook(void* client, string market,
+        unsafe private static extern FFIResult Orderbook(IntPtr client, string market,
             IntPtr bidBuffPtr, ulong bidBufLen, out ulong bidActualValueLen,
             IntPtr askBuffPtr, ulong AskBufLen, out ulong askActualValueLen,
             out ulong lastUpdateId,
@@ -138,20 +143,20 @@ namespace OpenLimits
         );
 
         [DllImport(NativeLib, EntryPoint = "get_price_ticker", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult GetPriceTicker(void* client, string market, out double price);
+        unsafe private static extern FFIResult GetPriceTicker(IntPtr client, string market, out double price);
 
         [DllImport(NativeLib, EntryPoint = "get_historic_rates", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult GetHistoricRates(void* client, string market, string interval, Paginator paginator,
+        unsafe private static extern FFIResult GetHistoricRates(IntPtr client, string market, Interval interval, Paginator paginator,
             IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen
         );
 
         [DllImport(NativeLib, EntryPoint = "get_historic_trades", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult GetHistoricTrades(void* client, string market, Paginator paginator,
+        unsafe private static extern FFIResult GetHistoricTrades(IntPtr client, string market, Paginator paginator,
             IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen
         );
 
         [DllImport(NativeLib, EntryPoint = "place_order", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult PlaceOrder(void* client, string market,
+        unsafe private static extern FFIResult PlaceOrder(IntPtr client, string market,
             string qty,
             bool limit,
             string price,
@@ -163,40 +168,43 @@ namespace OpenLimits
         );
         
         [DllImport(NativeLib, EntryPoint = "get_all_open_orders", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult GetAllOpenOrders(void* client,
+        unsafe private static extern FFIResult GetAllOpenOrders(IntPtr client,
             IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen
         );
 
         [DllImport(NativeLib, EntryPoint = "subscribe_orderbook", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult SubscribeToOrderbook(IntPtr subhandle, string market);
+        unsafe private static extern FFIResult SubscribeToOrderbook(IntPtr client, IntPtr subhandle, string market);
 
         [DllImport(NativeLib, EntryPoint = "subscribe_trades", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult SubscribeToTrades(IntPtr subhandle, string market);
+        unsafe private static extern FFIResult SubscribeToTrades(IntPtr client, IntPtr subhandle, string market);
 
         [DllImport(NativeLib, EntryPoint = "get_order_history", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult GetOrderHistory(void* client,
+        unsafe private static extern FFIResult GetOrderHistory(IntPtr client,
             string market, Paginator paginator,
             IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen
         );
 
         [DllImport(NativeLib, EntryPoint = "get_trade_history", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult GetTradeHistory(void* client,
+        unsafe private static extern FFIResult GetTradeHistory(IntPtr client,
             string market, string orderId, Paginator paginator,
             IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen
         );
 
         [DllImport(NativeLib, EntryPoint = "get_account_balances", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult GetAccountBalances(void* client,
+        unsafe private static extern FFIResult GetAccountBalances(IntPtr client,
             Paginator paginator,
             IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen
         );
 
 
         [DllImport(NativeLib, EntryPoint = "cancel_all_orders", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult CancelAllOrders(void* client, string market, IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen);
+        unsafe private static extern FFIResult CancelAllOrders(IntPtr client, string market, IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen);
+
+        [DllImport(NativeLib, EntryPoint = "cancel_order", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        unsafe private static extern FFIResult CancelOrder(IntPtr client,  string orderId, string market);
 
         [DllImport(NativeLib, EntryPoint = "receive_pairs", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        unsafe private static extern FFIResult ReceivePairs(void* client, IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen);
+        unsafe private static extern FFIResult ReceivePairs(IntPtr client, IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen);
 
         private void handleFFIResult(FFIResult result) {
         }
@@ -275,7 +283,7 @@ namespace OpenLimits
             fixed (AskBid* bidBuff = subBidsBuff.AsSpan()) {
                 fixed (AskBid* askBuff = subAsksBuff.AsSpan()) {
                     fixed (FFITrade* tradeBuff = subTradesBuff.AsSpan()) {
-                        return InitCbs(
+                        InitCbs(
                             _client_handle,
                             this.onPingHandler,
                             this.onErrorHandler,
@@ -285,20 +293,37 @@ namespace OpenLimits
 
                             (IntPtr)bidBuff, (UIntPtr)subBidsBuff.Length,
                             (IntPtr)askBuff, (UIntPtr)subAsksBuff.Length,
-                            (IntPtr)tradeBuff, (UIntPtr)subTradesBuff.Length
+                            (IntPtr)tradeBuff, (UIntPtr)subTradesBuff.Length,
+                            out var handle
                         );
+                        return handle;
                     }
                 }
             }
         }
 
         unsafe public ExchangeClient(BinanceClientConfig config) {
-            _client_handle = ExchangeClient.InitBinance(config);
+            
+            handleResult(
+                ExchangeClient.InitBinance(config, out var client_handle)
+            );
+            
+            _client_handle = client_handle;
             _sub_handle = InitCbs();
         }
 
         unsafe public ExchangeClient(NashClientConfig config) {
-            _client_handle = ExchangeClient.InitNash(config.apikey, config.secret, config.clientId, config.environment, config.timeout, config.affiliateCode);
+            handleResult(
+                ExchangeClient.InitNash(config.apikey, config.secret, config.clientId, config.environment, config.timeout, config.affiliateCode, out var client_handle)
+            );
+            _client_handle = client_handle;
+            _sub_handle = InitCbs();
+        }
+        unsafe public ExchangeClient(CoinbaseClientConfig config) {
+            handleResult(
+                ExchangeClient.InitCoinbase(config.apikey, config.secret, config.passphrase, config.sandbox, out var client_handle)
+            );
+            _client_handle = client_handle;
             _sub_handle = InitCbs();
         }
 
@@ -441,6 +466,18 @@ namespace OpenLimits
             var order = ffiOrder.ToOrder();
             ffiOrder.Dispose();
             return order;
+        }
+
+        unsafe public void CancelOrder(string orderId, string market) {
+            handleResult(ExchangeClient.CancelOrder(
+                _client_handle,
+                orderId,
+                market
+            ));
+        }
+
+        unsafe public void CancelOrder(string orderId) {
+            CancelOrder(orderId, null);
         }
 
         unsafe public Order MarketSell(MarketOrderRequest request) {
@@ -614,7 +651,7 @@ namespace OpenLimits
             }
             this.onOrderbookCbs.TryGetValue(market, out var callbacks);
             callbacks.Add(onOrderbook);
-            handleFFIResult(SubscribeToOrderbook(this._sub_handle, market));
+            handleFFIResult(SubscribeToOrderbook(this._client_handle, this._sub_handle, market));
             this.SetupEWH();
         }
         unsafe public void SubscribeToTrades(string market, OnTrades onTrades) {
@@ -623,7 +660,7 @@ namespace OpenLimits
             }
             this.onTradesCbs.TryGetValue(market, out var callbacks);
             callbacks.Add(onTrades);
-            handleFFIResult(SubscribeToTrades(this._sub_handle, market));
+            handleFFIResult(SubscribeToTrades(this._client_handle, this._sub_handle, market));
             this.SetupEWH();
         }
 
