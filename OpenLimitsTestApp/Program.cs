@@ -21,7 +21,7 @@ namespace OpenLimitsTestApp
 
         static public void Main(string[] args)
         {
-            
+            Console.WriteLine("Init");
             NashClientConfig config = NashClientConfig.Unauthenticated(0, NashEnvironment.Production, 1000);
             var client = new ExchangeClient(config);
 

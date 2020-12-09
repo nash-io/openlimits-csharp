@@ -20,14 +20,14 @@ namespace OpenLimitsTest
             TestContext.Progress.WriteLine("Testing error handling");
             Assert.Throws<BinanceError>(
                 delegate { 
-                    client.GetHistoricRates(new GetHistoricRatesRequest("sadsdqwe", "OneHour"));
+                    client.GetHistoricRates(new GetHistoricRatesRequest("sadsdqwe", Interval.OneHour));
                 }
             );
 
             TestContext.Progress.WriteLine("Orderbook " + client.Orderbook("BNBBTC"));
             TestContext.Progress.WriteLine("GetAccountBalances " + client.GetAccountBalances());
-            TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricRates(new GetHistoricRatesRequest("BNBBTC", "OneHour")));
-            TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricRates(new GetHistoricRatesRequest("BNBBTC", "OneHour")));
+            TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricRates(new GetHistoricRatesRequest("BNBBTC", Interval.OneHour)));
+            TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricRates(new GetHistoricRatesRequest("BNBBTC", Interval.OneHour)));
             TestContext.Progress.WriteLine("GetAllOpenOrders: " + client.GetAllOpenOrders());
             TestContext.Progress.WriteLine("GetOrderHistory BNBBTC: " + client.GetOrderHistory(new GetOrderHistoryRequest("BNBBTC")));
             TestContext.Progress.WriteLine("Limit buy: " + client.LimitBuy(LimitOrderRequest.goodTillCancelled("0.001", "1", "BNBBTC")));

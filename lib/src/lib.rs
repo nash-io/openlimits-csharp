@@ -17,6 +17,10 @@ use openlimits::{
     BinanceCredentials,
     BinanceParameters,
   },
+  coinbase::{
+    CoinbaseCredentials,
+    CoinbaseParameters,
+  },
   model::{      
     OrderBookRequest, 
     Liquidity,
@@ -47,6 +51,26 @@ use tokio::stream::StreamExt;
 use std::{ffi::CStr, ffi::CString, os::raw::c_char};
 use thiserror::Error;
 
+#[repr(u32)]
+#[derive(Debug, Copy, Clone)]
+pub enum FFIInterval {
+  OneMinute,
+  ThreeMinutes,
+  FiveMinutes,
+  FifteenMinutes,
+  ThirtyMinutes,
+  OneHour,
+  TwoHours,
+  FourHours,
+  SixHours,
+  EightHours,
+  TwelveHours,
+  OneDay,
+  ThreeDays,
+  OneWeek,
+  OneMonth
+}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct FFIMarketPair {
@@ -59,26 +83,27 @@ pub struct FFIMarketPair {
   quote_min_price: *mut c_char,
 }
 
-fn interval_from_string(
-  str: String
+fn interval_from_ffi_interval(
+  interval: FFIInterval
 ) -> Result<Interval, String> {
-  match str.as_str() {
-    "OneMinute" => Ok(Interval::OneMinute),
-    "ThreeMinutes" => Ok(Interval::ThreeMinutes),
-    "FiveMinutes" => Ok(Interval::FiveMinutes),
-    "FifteenMinutes" => Ok(Interval::FifteenMinutes),
-    "ThirtyMinutes" => Ok(Interval::ThirtyMinutes),
-    "OneHour" => Ok(Interval::OneHour),
-    "TwoHours" => Ok(Interval::TwoHours),
-    "FourHours" => Ok(Interval::FourHours),
-    "SixHours" => Ok(Interval::SixHours),
-    "EightHours" => Ok(Interval::EightHours),
-    "TwelveHours" => Ok(Interval::TwelveHours),
-    "OneDay" => Ok(Interval::OneDay),
-    "ThreeDays" => Ok(Interval::ThreeDays),
-    "OneWeek" => Ok(Interval::OneWeek),
-    "OneMonth" => Ok(Interval::OneMonth),
-    _ => Err(format!("Invalid interval string {}", str))
+  #[allow(unreachable_patterns)]
+  match interval {
+    FFIInterval::OneMinute => Ok(Interval::OneMinute),
+    FFIInterval::ThreeMinutes => Ok(Interval::ThreeMinutes),
+    FFIInterval::FiveMinutes => Ok(Interval::FiveMinutes),
+    FFIInterval::FifteenMinutes => Ok(Interval::FifteenMinutes),
+    FFIInterval::ThirtyMinutes => Ok(Interval::ThirtyMinutes),
+    FFIInterval::OneHour => Ok(Interval::OneHour),
+    FFIInterval::TwoHours => Ok(Interval::TwoHours),
+    FFIInterval::FourHours => Ok(Interval::FourHours),
+    FFIInterval::SixHours => Ok(Interval::SixHours),
+    FFIInterval::EightHours => Ok(Interval::EightHours),
+    FFIInterval::TwelveHours => Ok(Interval::TwelveHours),
+    FFIInterval::OneDay => Ok(Interval::OneDay),
+    FFIInterval::ThreeDays => Ok(Interval::ThreeDays),
+    FFIInterval::OneWeek => Ok(Interval::OneWeek),
+    FFIInterval::OneMonth => Ok(Interval::OneMonth),
+    _ => Err(format!("Invalid interval value {:?}", interval))
   }
 }
 
@@ -178,6 +203,10 @@ impl TryInto<Paginator> for FFIPaginator {
 pub enum OpenlimitsSharpError {
   #[error("Invalid argument {0}")]
   InvalidArgument(String),
+  #[error("Failed to initialize: {0}")]
+  InitializeException(String),
+  #[error("Failed to subscribe: {0}")]
+  SubscribeException(String),
   #[error("{0}")]
   OpenLimitsError(#[from] OpenLimitError)
 }
@@ -213,7 +242,11 @@ pub enum OpenLimitsResultTag {
   NotParsableResponse,
   MissingParameter,
 
-  WebSocketMessageNotSupported
+  WebSocketMessageNotSupported,
+
+  InitializeException,
+  SubscribeException,
+  NoMarketPair
 }
 
 #[repr(C)]
@@ -229,25 +262,27 @@ fn result_to_ffi(r: Result<(), OpenlimitsSharpError>) -> OpenLimitsResult {
     Err(e) => {
       match e {
         OpenlimitsSharpError::InvalidArgument(msg) => OpenLimitsResult { tag: OpenLimitsResultTag::InvalidArgument, message: string_to_c_str(msg) },
+        OpenlimitsSharpError::InitializeException(msg) => OpenLimitsResult { tag: OpenLimitsResultTag::InitializeException, message: string_to_c_str(msg) },
+        OpenlimitsSharpError::SubscribeException(msg) => OpenLimitsResult { tag: OpenLimitsResultTag::SubscribeException, message: string_to_c_str(msg) },
         OpenlimitsSharpError::OpenLimitsError(e) => {
           let message = match &e {
             OpenLimitError::BinanceError(e) => e.msg.clone(),
             OpenLimitError::CoinbaseError(e) => e.message.clone(),
             OpenLimitError::NashProtocolError(e) => e.0.to_string(),
             OpenLimitError::MissingImplementation(e) => e.message.clone(),
-            OpenLimitError::AssetNotFound() => String::from("AssetNotFound"),
-            OpenLimitError::NoApiKeySet() => String::from("NoApiKeySet"),
-            OpenLimitError::InternalServerError() => String::from("InternalServerError"),
-            OpenLimitError::ServiceUnavailable() => String::from("ServiceUnavailable"),
+            OpenLimitError::AssetNotFound() => String::from("Asset not found"),
+            OpenLimitError::NoApiKeySet() => String::from("No api key set"),
+            OpenLimitError::InternalServerError() => String::from("Internal server error"),
+            OpenLimitError::ServiceUnavailable() => String::from("Service unavailable"),
             OpenLimitError::Unauthorized() => String::from("Unauthorized"),
-            OpenLimitError::SymbolNotFound() => String::from("SymbolNotFound"),
-            OpenLimitError::SocketError() => String::from("SocketError"),
-            OpenLimitError::GetTimestampFailed() => String::from("GetTimestampFailed"),
+            OpenLimitError::SymbolNotFound() => String::from("Symbol not found"),
+            OpenLimitError::SocketError() => String::from("Socket error"),
+            OpenLimitError::GetTimestampFailed() => String::from("Get timestamp failed"),
             OpenLimitError::ReqError(e) => e.to_string(),
             OpenLimitError::InvalidHeaderError(e) => e.to_string(),
             OpenLimitError::InvalidPayloadSignature(e) => e.to_string(),
             OpenLimitError::IoError(e) => e.to_string(),
-            OpenLimitError::PoisonError() => String::from("PoisonError"),
+            OpenLimitError::PoisonError() => String::from("Poison error"),
             OpenLimitError::JsonError(e) => e.to_string(),
             OpenLimitError::ParseFloatError(e) => e.to_string(),
             OpenLimitError::UrlParserError(e) => e.to_string(),
@@ -256,7 +291,8 @@ fn result_to_ffi(r: Result<(), OpenlimitsSharpError>) -> OpenLimitsResult {
             OpenLimitError::UnkownResponse(e) => e.clone(),
             OpenLimitError::NotParsableResponse(e) => e.clone(),
             OpenLimitError::MissingParameter(e) => e.clone(),
-            OpenLimitError::WebSocketMessageNotSupported() => String::from("WebSocketMessageNotSupported"),
+            OpenLimitError::WebSocketMessageNotSupported() => String::from("WebSocket message not supported"),
+            OpenLimitError::NoMarketPair => String::from("No market pair")
           };
           let tag = match &e {
             OpenLimitError::BinanceError(_) => OpenLimitsResultTag::BinanceError,
@@ -284,7 +320,8 @@ fn result_to_ffi(r: Result<(), OpenlimitsSharpError>) -> OpenLimitsResult {
             OpenLimitError::UnkownResponse(_) => OpenLimitsResultTag::UnkownResponse,
             OpenLimitError::NotParsableResponse(_) => OpenLimitsResultTag::NotParsableResponse,
             OpenLimitError::MissingParameter(_) => OpenLimitsResultTag::MissingParameter,
-            OpenLimitError::WebSocketMessageNotSupported() => OpenLimitsResultTag::WebSocketMessageNotSupported
+            OpenLimitError::WebSocketMessageNotSupported() => OpenLimitsResultTag::WebSocketMessageNotSupported,
+            OpenLimitError::NoMarketPair => OpenLimitsResultTag::NoMarketPair,
           };
           OpenLimitsResult { tag, message: string_to_c_str(message) }
         },
@@ -389,7 +426,8 @@ fn order_status_to_ffi(t: OrderStatus) -> FFIOrderStatus {
 #[derive(Debug, Copy, Clone)]
 pub struct FFITrade {
   id: *mut c_char,
-  order_id: *mut c_char,
+  buyer_order_id: *mut c_char,
+  seller_order_id: *mut c_char,
   market_pair: *mut c_char,
   price: f64,
   qty: f64,
@@ -465,10 +503,18 @@ fn to_ffi_candle(f: &Candle) -> FFICandle {
   }
 }
 
+fn option_string_to_c_str(s: Option<String>) -> *mut c_char {
+  match s {
+    None => std::ptr::null_mut(),
+    Some(s ) => string_to_c_str(s)
+  }
+}
+
 fn to_ffi_trade(f: &Trade) -> FFITrade {
   FFITrade {
     id: string_to_c_str(f.id.clone()),
-    order_id: string_to_c_str(f.order_id.clone()),
+    buyer_order_id: option_string_to_c_str(f.buyer_order_id.clone()),
+    seller_order_id: option_string_to_c_str(f.seller_order_id.clone()),
     market_pair: string_to_c_str(f.market_pair.clone()),
     price: f.price.to_f64().unwrap_or_default(),
     qty: f.qty.to_f64().unwrap_or_default(),
@@ -550,28 +596,103 @@ pub struct ExchangeClient {
 pub struct InitResult {
   client: *mut ExchangeClient,
 }
+type SubResult = std::result::Result<openlimits::exchange_ws::CallbackHandle, openlimits::errors::OpenLimitError>;
+type SubChannel = tokio::sync::oneshot::Sender<SubResult>;
 pub enum SubthreadCmd {
-  Sub(Subscription),
+  Sub(Subscription, SubChannel),
   Disconnect
 }
 
 #[no_mangle]
-pub  extern "cdecl" fn init_binance(config: FFIBinanceConfig) -> *mut ExchangeClient {
-  let init_params: InitAnyExchange = config.try_into().map(InitAnyExchange::Binance).expect("Failed to parse params");
-  let mut runtime = tokio::runtime::Builder::new().basic_scheduler().enable_all().build().expect("Failed to create runtime");
-  
-  let client_future = OpenLimits::instantiate(init_params.clone());
-  let client: AnyExchange = runtime.block_on(client_future);
+pub  extern "cdecl" fn init_binance(
+  config: FFIBinanceConfig,
+  out_client: Out<*mut ExchangeClient>
+) -> OpenLimitsResult {
+  let call = move|| -> Result<(), OpenlimitsSharpError>{
+    let init_params: InitAnyExchange = config.try_into().map(InitAnyExchange::Binance).map_err(|_| OpenlimitsSharpError::InitializeException(String::from("Failed to parse config")))?;
+    let mut runtime = tokio::runtime::Builder::new().basic_scheduler().enable_all().build().map_err(|_| OpenlimitsSharpError::InitializeException(String::from("Failed to start tokio runtime")))?;
+    
+    let client_future = OpenLimits::instantiate(init_params.clone());
+    let client: AnyExchange = runtime.block_on(client_future)?;
 
 
-  let b = Box::new(ExchangeClient{
-    client,
-    init_params,
-    channel: None,
-    runtime
-  });
-  Box::into_raw(b)
+    let b = Box::new(ExchangeClient{
+      client,
+      init_params,
+      channel: None,
+      runtime
+    });
+    unsafe {
+      *out_client = Box::into_raw(b);
+      Ok(())
+    }
+  };
+
+  result_to_ffi(call())
 }
+
+#[no_mangle]
+pub  extern "cdecl" fn init_coinbase(
+  apikey: *mut c_char,
+  api_secret: *mut c_char,
+  passphrase: *mut c_char,
+  sandbox: bool,
+  out_client: Out<*mut ExchangeClient>
+) -> OpenLimitsResult {
+  let call = move|| -> Result<(), OpenlimitsSharpError>{
+    let api_key = nullable_cstr(apikey).map_err(|e|
+      OpenlimitsSharpError::InvalidArgument(format!("Failed to parse apikey string. Invalid character on pos {}", e.valid_up_to()))
+    )?;
+
+    let api_secret = nullable_cstr(api_secret).map_err(|e|
+      OpenlimitsSharpError::InvalidArgument(format!("Failed to parse api_secret string. Invalid character on pos {}", e.valid_up_to()))
+    )?;
+
+    let passphrase = nullable_cstr(passphrase).map_err(|e|
+      OpenlimitsSharpError::InvalidArgument(format!("Failed to parse passphrase string. Invalid character on pos {}", e.valid_up_to()))
+    )?;
+
+    let init_params: InitAnyExchange = InitAnyExchange::Coinbase(
+      CoinbaseParameters {
+        sandbox,
+        credentials: match (api_key, api_secret, passphrase) {
+          (Some(api_key), Some(api_secret), Some(passphrase)) => Ok(
+            Some(
+              CoinbaseCredentials {
+                api_key,
+                api_secret,
+                passphrase
+              }
+            )
+          ),
+          (None, None, None) => Ok(None),
+          _ => Err(OpenlimitsSharpError::InvalidArgument(format!("Invalid credentials")))
+        }?
+      }
+    );
+
+    let mut runtime = tokio::runtime::Builder::new().basic_scheduler().enable_all().build().map_err(|_| OpenlimitsSharpError::InitializeException(String::from("Failed to start tokio runtime")))?;
+    
+    let client_future = OpenLimits::instantiate(init_params.clone());
+    let client: AnyExchange = runtime.block_on(client_future)?;
+
+
+    let b = Box::new(ExchangeClient{
+      client,
+      init_params,
+      channel: None,
+      runtime
+    });
+    unsafe {
+      *out_client = Box::into_raw(b);
+      Ok(())
+    }
+  };
+
+  result_to_ffi(call())
+}
+
+
 
 #[no_mangle]
 pub  extern "cdecl" fn init_nash(
@@ -581,48 +702,62 @@ pub  extern "cdecl" fn init_nash(
   environment: FFINashEnv,
   timeout: u64,
   affiliate_code: *mut c_char,
-)  -> *mut ExchangeClient {
-  let mut credentials: Option<NashCredentials> = None;
-  if !apikey.is_null() && !secret.is_null() {
-    credentials = Some(
-      NashCredentials {
-        secret: c_str_to_string(secret).expect("failed to decode secret"),
-        session: c_str_to_string(apikey).expect("failed to decode apikey")
-      }
-    )
-  }
+  out_client: Out<*mut ExchangeClient>
+)  -> OpenLimitsResult {
+  let call = move|| -> Result<(), OpenlimitsSharpError>{
+    let mut credentials: Option<NashCredentials> = None;
+    if !apikey.is_null() && !secret.is_null() {
+      credentials = Some(
+        NashCredentials {
+          secret: c_str_to_string(secret).map_err(|e|
+            OpenlimitsSharpError::InvalidArgument(format!("Failed to parse market string. Invalid character on pos {}", e.valid_up_to()))
+          )?,
+          session: c_str_to_string(apikey).map_err(|e|
+            OpenlimitsSharpError::InvalidArgument(format!("Failed to parse session string. Invalid character on pos {}", e.valid_up_to()))
+          )?
+        }
+      )
+    }
 
-  let environment = match environment {
-    FFINashEnv::Production => Environment::Production,
-    FFINashEnv::Sandbox => Environment::Sandbox,
+    let environment = match environment {
+      FFINashEnv::Production => Environment::Production,
+      FFINashEnv::Sandbox => Environment::Sandbox,
+    };
+
+    let affiliate_code = nullable_cstr(affiliate_code).map_err(|e|
+      OpenlimitsSharpError::InvalidArgument(format!("Failed to parse affiliate_code string. Invalid character on pos {}", e.valid_up_to()))
+    )?;
+
+    let nash_params =  NashParameters {
+      affiliate_code,
+      credentials,
+      client_id,
+      timeout,
+      environment
+    };
+
+    let init_params = InitAnyExchange::Nash(
+      nash_params
+    );
+
+    let mut runtime = tokio::runtime::Builder::new().basic_scheduler().enable_all().build().map_err(|_| OpenlimitsSharpError::InitializeException(String::from("Failed to start tokio runtime")))?;
+
+    let client_future = OpenLimits::instantiate(init_params.clone());
+    let client: AnyExchange = runtime.block_on(client_future)?;
+
+    let b = Box::new(ExchangeClient{
+      client,
+      init_params,
+      channel: None,
+      runtime
+    });
+    unsafe {
+      *out_client = Box::into_raw(b);
+      Ok(())
+    }
   };
-
-  let affiliate_code = nullable_cstr(affiliate_code).unwrap();
-
-  let nash_params =  NashParameters {
-    affiliate_code,
-    credentials,
-    client_id,
-    timeout,
-    environment
-  };
-
-  let init_params = InitAnyExchange::Nash(
-    nash_params
-  );
-
-  let mut runtime = tokio::runtime::Builder::new().basic_scheduler().enable_all().build().expect("Failed to create runtime");
-
-  let client_future = OpenLimits::instantiate(init_params.clone());
-  let client: AnyExchange = runtime.block_on(client_future);
-
-  let b = Box::new(ExchangeClient{
-    client,
-    init_params,
-    channel: None,
-    runtime
-  });
-  Box::into_raw(b)
+  
+  result_to_ffi(call())
 }
 
 #[no_mangle]
@@ -717,7 +852,7 @@ pub  extern "cdecl" fn get_price_ticker(
 pub  extern "cdecl" fn get_historic_rates(
   client: *mut ExchangeClient,
   market: *mut c_char,
-  interval: *mut c_char,
+  interval: FFIInterval,
   paginator: *mut FFIPaginator,
   candles_buff: *mut FFICandle, candles_buff_len: usize, actual_candles_buff_len: Out<usize>,
 ) -> OpenLimitsResult {
@@ -736,8 +871,7 @@ pub  extern "cdecl" fn get_historic_rates(
     let market_pair = c_str_to_string(market).map_err(|e|
       OpenlimitsSharpError::InvalidArgument(format!("Failed to parse market string. Invalid character on pos {}", e.valid_up_to()))
     )?;
-    let interval = c_str_to_string(interval).map(interval_from_string).map_err(|_| OpenlimitsSharpError::InvalidArgument(String::from("Invalid interval")))?;
-    let interval = interval.map_err(|_|OpenlimitsSharpError::InvalidArgument(String::from("Invalid interval")))?;
+    let interval = interval_from_ffi_interval(interval).map_err(|_| OpenlimitsSharpError::InvalidArgument(String::from("Invalid interval")))?;
 
     let req = GetHistoricRatesRequest {
       paginator,
@@ -1186,35 +1320,46 @@ pub  extern "cdecl" fn init_subscriptions(
   on_disconnet: extern fn(),
   bids_buff: FFIAskBidBox, bids_buff_len: usize,
   asks_buff: FFIAskBidBox, asks_buff_len: usize,
-  trades_buff: FFITradeBox, trades_buff_len: usize
-) -> *mut tokio::sync::mpsc::UnboundedSender<SubthreadCmd> {
+  trades_buff: FFITradeBox, trades_buff_len: usize,
+  sub_handle: Out<*mut tokio::sync::mpsc::UnboundedSender<SubthreadCmd>>
+) ->  OpenLimitsResult {
   let (sub_request_tx, mut sub_rx) = tokio::sync::mpsc::unbounded_channel::<SubthreadCmd>();
 
   let init_params = unsafe {
     (*client).init_params.clone()
   };
-
+  let (finish_tx, finish_rx) = tokio::sync::oneshot::channel::<Result<(), OpenlimitsSharpError>>();
   
   std::thread::spawn(move || {
-
-    let mut rt = tokio::runtime::Builder::new()
+    let call = move|| -> Result<(tokio::runtime::Runtime, OpenLimitsWs<AnyWsExchange>), OpenlimitsSharpError> {
+      let mut rt = tokio::runtime::Builder::new()
                 .basic_scheduler()
                 .enable_all()
-                .build().expect("Could not create Tokio runtime");
-    let client: OpenLimitsWs<AnyWsExchange> = rt.block_on(OpenLimitsWs::instantiate(init_params));
+                .build()
+                .map_err(|_| OpenlimitsSharpError::InitializeException(String::from("Failed to start tokio runtime")))?;
+      let client: OpenLimitsWs<AnyWsExchange> = rt.block_on(OpenLimitsWs::instantiate(init_params))?;
+
+      Ok((rt, client))
+    };
+
+    let (mut rt, client) = match call() {
+      Ok(e) => e,
+      Err(e) => {
+        finish_tx.send(Err(e)).expect("Failed to communicate result back to main thread");
+        return;
+      }
+    };
+    finish_tx.send(Ok(())).expect("Failed to communicate result back to main thread");
+
     loop { 
       let subcmd = sub_rx.next();
-      // let combined = select(subcmd, msg);
-
-      // let next_msg = rt.block_on(combined);
-
       let thread_cmd = rt.block_on(subcmd);
       match thread_cmd {
         Some(SubthreadCmd::Disconnect) => {
           break;
         },
-        Some(SubthreadCmd::Sub(sub)) => {
-          match rt.block_on(client.subscribe(sub.clone(), move |resp| {
+        Some(SubthreadCmd::Sub(sub, writer)) => {
+          let result = rt.block_on(client.subscribe(sub.clone(), move |resp| {
             let out_asks = unsafe { std::slice::from_raw_parts_mut::<FFIAskBid>(asks_buff.0, asks_buff_len) };
             let out_bids = unsafe { std::slice::from_raw_parts_mut::<FFIAskBid>(bids_buff.0, bids_buff_len) };
             let resp = match resp {
@@ -1239,7 +1384,7 @@ pub  extern "cdecl" fn init_subscriptions(
                 let out_trades = unsafe { std::slice::from_raw_parts_mut::<FFITrade>(trades_buff.0, trades_buff_len) };
                 let market = match sub.clone() {
                   Subscription::Trades(market) => market,
-                  _ => panic!("Invalid callback triggered")
+                  _ => panic!("Unreachable")
                 };
                 for (i, trade) in trades.iter().enumerate() {
                   out_trades[i] = to_ffi_trade(trade);
@@ -1249,7 +1394,7 @@ pub  extern "cdecl" fn init_subscriptions(
               OpenLimitsWebSocketMessage::OrderBook(resp) => {
                 let market = match sub.clone() {
                   Subscription::OrderBookUpdates(market) => market,
-                  _ => panic!("Invalid callback triggered")
+                  _ => panic!("Unreachable")
                 };
                 for (i, bid) in resp.bids.iter().enumerate() {
                   out_bids[i] = to_ffi_ask_bid(bid);
@@ -1268,7 +1413,7 @@ pub  extern "cdecl" fn init_subscriptions(
               OpenLimitsWebSocketMessage::OrderBookDiff(resp) => {
                 let market = match sub.clone() {
                   Subscription::OrderBookUpdates(market) => market,
-                  _ => panic!("Invalid callback triggered")
+                  _ => panic!("Unreachable")
                 };
                 for (i, bid) in resp.bids.iter().enumerate() {
                   out_bids[i] = to_ffi_ask_bid(bid);
@@ -1285,22 +1430,27 @@ pub  extern "cdecl" fn init_subscriptions(
                 );
               }
             };
-
-          })) {
-            Ok(_) => {
-              // println!("Subscribed to {:?}", sub);
-            },
-            Err(msg) => {
-              println!("Failed to subscribe: {}", msg);
-            }
-          };
+          }));
+          writer.send(result).expect("Failed to send result back to subcribe call");
         },
         None => {}
       }
     }
     on_disconnet();
   });
-  Box::into_raw(Box::new(sub_request_tx))
+  
+  unsafe {
+    let r = match  (*client).runtime.block_on(
+      finish_rx
+    ) {
+      Err(error) => Err(OpenlimitsSharpError::InitializeException(format!("Failed while waiting for subscription thread to intialize: {}", error.to_string()))),
+      Ok(e) => e
+    };
+
+    *sub_handle = Box::into_raw(Box::new(sub_request_tx));
+    
+    result_to_ffi(r)
+  }
 }
 
 
@@ -1314,6 +1464,7 @@ pub extern fn free_string(s: *mut c_char) {
 
 #[no_mangle]
 pub  extern "cdecl" fn subscribe_orderbook(
+  client: *mut ExchangeClient,
   channel: *mut tokio::sync::mpsc::UnboundedSender<SubthreadCmd>,
   market: *mut c_char,
 ) -> OpenLimitsResult {
@@ -1325,21 +1476,28 @@ pub  extern "cdecl" fn subscribe_orderbook(
       OpenlimitsSharpError::InvalidArgument(format!("Failed to parse market string. Invalid character on pos {}", e.valid_up_to()))
     )?;
 
+    let (finish_tx, finish_rx) = tokio::sync::oneshot::channel::<SubResult>();
     unsafe {
-      let res = (*channel).send(
+      (*channel).send(
         SubthreadCmd::Sub(Subscription::OrderBookUpdates(
           market_pair,
-        ))
-      );
-      res.map_err(|_| "Send error").expect("Failed to send message");
+        ), finish_tx)
+      ).map_err(|_| OpenlimitsSharpError::SubscribeException(String::from("failed to send subscription to handler")))?;
+
+      let result = (*client).runtime.block_on(finish_rx).map_err(|_| OpenlimitsSharpError::SubscribeException(String::from("failed to get subscription result from handler")))?;
+
+      match result {
+        Ok(_) => Ok(()),
+        Err(e) => Err(OpenlimitsSharpError::OpenLimitsError(e))
+      }
     }
-    Ok(())
   };
   result_to_ffi(call())
 }
 
 #[no_mangle]
 pub  extern "cdecl" fn subscribe_trades(
+  client: *mut ExchangeClient,
   channel: *mut tokio::sync::mpsc::UnboundedSender<SubthreadCmd>,
   market: *mut c_char
 ) -> OpenLimitsResult {
@@ -1350,16 +1508,22 @@ pub  extern "cdecl" fn subscribe_trades(
     let market_pair = c_str_to_string(market).map_err(|e|
       OpenlimitsSharpError::InvalidArgument(format!("Failed to parse market string. Invalid character on pos {}", e.valid_up_to()))
     )?;
+    let (finish_tx, finish_rx) = tokio::sync::oneshot::channel::<SubResult>();
 
     unsafe {
-      let res = (*channel).send(
+      (*channel).send(
         SubthreadCmd::Sub(Subscription::Trades(
           market_pair,
-        ))
-      );
-      res.map_err(|_| "Send error").expect("Failed to send message");
+        ), finish_tx)
+      ).map_err(|_| OpenlimitsSharpError::SubscribeException(String::from("failed to send subscription to handler")))?;
+      
+      let result = (*client).runtime.block_on(finish_rx).map_err(|_| OpenlimitsSharpError::SubscribeException(String::from("failed to get subscription result from handler")))?;
+
+      match result {
+        Ok(_) => Ok(()),
+        Err(e) => Err(OpenlimitsSharpError::OpenLimitsError(e))
+      }
     }
-    Ok(())
   };
   result_to_ffi(call())
 }
@@ -1372,6 +1536,6 @@ pub  extern "cdecl" fn disconnect(
     let res = (*channel).send(
       SubthreadCmd::Disconnect
     );
-    res.map_err(|_| "Send error").expect("Failed to send message");
+    res.map_err(|_| "Send error").expect("Failed to disconnect");
   }
 }
