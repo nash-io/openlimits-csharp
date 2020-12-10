@@ -10,7 +10,7 @@ NAvigate to the lib directory and run `cargo build`
 
 ## Installation
 
-`dotnet add package Openlimits --version 0.1.6`
+`dotnet add package Openlimits --version 0.1.11`
 
 ## Example usage
 
