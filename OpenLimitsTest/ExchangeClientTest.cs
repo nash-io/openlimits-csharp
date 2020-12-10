@@ -3,6 +3,7 @@ namespace OpenLimitsTest
 {
     using OpenLimits;
     using System;
+    using System.Diagnostics;
     public class ExchangeClientTest
     {
         [Test]
