@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>Openlimits</PackageId>
+<<<<<<< Updated upstream
     <Version>0.1.9</Version>
+=======
+    <Version>0.1.11</Version>
+>>>>>>> Stashed changes
     <Authors>jankjr</Authors>
     <Company>nash</Company>
     <PackageTags>Nash;Openlimits;Trading;Cryptocurrency</PackageTags>
@@ -20,7 +24,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="libopenlimits_sharp.dll" Pack="true" PackagePath="runtimes\win10-x64\native" />
+    <None Include="libopenlimits_sharp_64.dll" Pack="true" PackagePath="runtimes\win-x64\native\libopenlimits_sharp.dll" />
+    <None Include="libopenlimits_sharp_32.dll" Pack="true" PackagePath="runtimes\win-x86\native\libopenlimits_sharp.dll" />
     <None Include="libopenlimits_sharp.so" Pack="true" PackagePath="runtimes\linux-x64\native" />
     <None Include="libopenlimits_sharp.dylib" Pack="true" PackagePath="runtimes\osx\native" />
   </ItemGroup>
