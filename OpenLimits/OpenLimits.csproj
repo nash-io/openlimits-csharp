@@ -1,11 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>Openlimits</PackageId>
-<<<<<<< Updated upstream
-    <Version>0.1.9</Version>
-=======
-    <Version>0.1.11</Version>
->>>>>>> Stashed changes
+    <Version>0.1.12</Version>
     <Authors>jankjr</Authors>
     <Company>nash</Company>
     <PackageTags>Nash;Openlimits;Trading;Cryptocurrency</PackageTags>
@@ -17,7 +13,7 @@
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFrameworks>netcoreapp3.0;net45</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -30,6 +26,13 @@
     <None Include="libopenlimits_sharp.dylib" Pack="true" PackagePath="runtimes\osx\native" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="LICENSE.txt" Pack="true" PackagePath="LICENSE.txt"/>
+    <None Include="LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
 </Project>
