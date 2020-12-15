@@ -9,7 +9,7 @@ namespace OpenLimits
         public readonly ulong timeInForceDurationMs;
         public readonly bool postOnly;
 
-        private LimitOrderRequest(string price, string size, string market, TimeInForce timeInForce, ulong timeInForceDurationMs, bool postOnly)
+        public LimitOrderRequest(string price, string size, string market, TimeInForce timeInForce, ulong timeInForceDurationMs, bool postOnly)
         {
             this.price = price;
             this.size = size;

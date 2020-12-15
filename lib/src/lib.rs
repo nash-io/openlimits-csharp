@@ -23,6 +23,7 @@ use openlimits::{
   },
   model::{      
     OrderBookRequest, 
+    GetOrderRequest,
     Liquidity,
     Side,
     CancelAllOrdersRequest, 
@@ -449,6 +450,7 @@ pub struct FFIOrder {
   pub status: FFIOrderStatus,
   pub size: f64,
   pub price: f64,
+  pub remaining: f64,
 }
 
 fn order_to_ffi(t: Order) -> FFIOrder {
@@ -474,6 +476,10 @@ fn order_to_ffi(t: Order) -> FFIOrder {
       Some(price) => price.to_f64().unwrap_or_default(),
       None => std::f64::NAN
     },
+    remaining: match t.remaining {
+      Some(rem) =>  rem.to_f64().unwrap_or_default(),
+      None => std::f64::NAN
+    }
   }
 }
 
@@ -1238,6 +1244,41 @@ pub  extern "cdecl" fn cancel_all_orders(
     }
     Ok(())
   };  
+  result_to_ffi(call())
+}
+
+#[no_mangle]
+pub extern "cdecl" fn get_order(
+  client: *mut ExchangeClient,
+  order_id: *mut c_char,
+  market: *mut c_char,
+  result: Out<FFIOrder>,
+) -> OpenLimitsResult {
+  let call = move|| -> Result<(), OpenlimitsSharpError> {
+    if client.is_null() {
+      return Err(OpenlimitsSharpError::InvalidArgument(String::from("client is null")));
+    }
+
+    let id = c_str_to_string(order_id).map_err(|e|
+      OpenlimitsSharpError::InvalidArgument(format!("Failed to parse market string. Invalid character on pos {}", e.valid_up_to()))
+    )?;
+    let market_pair = nullable_cstr(market).map_err(|e|
+      OpenlimitsSharpError::InvalidArgument(format!("Failed to parse market string. Invalid character on pos {}", e.valid_up_to()))
+    )?;
+
+    unsafe {
+      let order = (*client).runtime.block_on(
+        (*client).client.get_order( &GetOrderRequest {
+          id,
+          market_pair
+        })
+      )?;
+      (*result) = order_to_ffi(order);
+    }
+
+    Ok(())
+  };
+
   result_to_ffi(call())
 }
 

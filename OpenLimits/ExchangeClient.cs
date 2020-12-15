@@ -8,6 +8,7 @@ namespace OpenLimits
     using System.Runtime.InteropServices;
     public class ExchangeClient
     {
+        static HashSet<ExchangeClient> _clients = new HashSet<ExchangeClient>();
         private void handleResult(FFIResult result) {
             string message = "Unknown error";
             if (result.message.ToInt64() != 0) {
@@ -82,17 +83,25 @@ namespace OpenLimits
         // The internals
         public delegate void OnError();
         public delegate void OnPing();
-        private delegate void OnDisconnect();
+        public delegate void OnDisconnect();
         public delegate void OnOrderbook(OrderbookResponse orderbook);
         unsafe private delegate void OnOrderbookFFI(ulong bidActualValueLen, ulong askActualValueLen, IntPtr market, ulong lastUpdateId, ulong updateId);
         public delegate void OnTrades(TradesResponse trades);
         private delegate void OnTradesFFI(ulong bidActualValueLen, IntPtr market);
-        private OnError onErrorCB;
+        private OnError onErrorCb;
+        private List<OnError> onErrorCbs = new List<OnError>();
 
-        private OnPing onPingCB;
+        private OnPing onPingCb;
+        private List<OnPing> onPingCbs = new List<OnPing>();
+        private OnOrderbookFFI onOrderbookCb;
+        private OnTradesFFI onTradesCb;
 
         private Dictionary<string, List<OnOrderbook>> onOrderbookCbs = new Dictionary<string, List<OnOrderbook>>();
         private Dictionary<string, List<OnTrades>> onTradesCbs = new Dictionary<string, List<OnTrades>>();
+    
+        private OnDisconnect onDisconnectCb;
+        private List<OnDisconnect> onDisconnectCbs = new List<OnDisconnect>();
+
 
        
         const string NativeLib = "libopenlimits_sharp";
@@ -203,24 +212,24 @@ namespace OpenLimits
         [DllImport(NativeLib, EntryPoint = "cancel_order", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         unsafe private static extern FFIResult CancelOrder(IntPtr client,  string orderId, string market);
 
+        
+        [DllImport(NativeLib, EntryPoint = "get_order", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        unsafe private static extern FFIResult GetOrder(IntPtr client,  string orderId, string market, out FFIOrder result);
+
         [DllImport(NativeLib, EntryPoint = "receive_pairs", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         unsafe private static extern FFIResult ReceivePairs(IntPtr client, IntPtr buffPtr, UIntPtr valueBufLen, out UIntPtr actualValueLen);
 
         private void handleFFIResult(FFIResult result) {
         }
         private void onPingHandler() {
-            if (this.onPingCB == null){
-                return;
+            foreach(var callback in this.onPingCbs) {
+                callback();
             }
-
-            onPingCB();
         }
         private void onErrorHandler() {
-            if (this.onErrorCB == null){
-                return;
+            foreach(var callback in this.onErrorCbs) {
+                callback();
             }
-
-            onErrorCB();
         }
         unsafe private void onTradesHandler(ulong tradeBuffLen, IntPtr marketStr) {
             var market = CString.ToString(marketStr);
@@ -277,19 +286,31 @@ namespace OpenLimits
         Thread ewhThreadHandle = null;
         private void onDisconnect() {
             ewh.Set();
+            _clients.Remove(this);
+            
+            foreach(var callback in this.onDisconnectCbs) {
+                callback();
+            }
         }
 
         unsafe private IntPtr InitCbs() {
+            _clients.Add(this);
             fixed (AskBid* bidBuff = subBidsBuff.AsSpan()) {
                 fixed (AskBid* askBuff = subAsksBuff.AsSpan()) {
                     fixed (FFITrade* tradeBuff = subTradesBuff.AsSpan()) {
+                        this.onOrderbookCb = this.onOrderbookHandler;
+                        this.onTradesCb = this.onTradesHandler;
+                        this.onPingCb = this.onPingHandler;
+                        this.onErrorCb = this.onErrorHandler;
+                        this.onTradesCb = this.onTradesHandler;
+                        this.onDisconnectCb = this.onDisconnect;
                         InitCbs(
                             _client_handle,
-                            this.onPingHandler,
-                            this.onErrorHandler,
-                            this.onOrderbookHandler,
-                            this.onTradesHandler,
-                            this.onDisconnect,
+                            this.onErrorCb,
+                            this.onPingCb,
+                            this.onOrderbookCb,
+                            this.onTradesCb,
+                            this.onDisconnectCb,
 
                             (IntPtr)bidBuff, (UIntPtr)subBidsBuff.Length,
                             (IntPtr)askBuff, (UIntPtr)subAsksBuff.Length,
@@ -303,7 +324,6 @@ namespace OpenLimits
         }
 
         unsafe public ExchangeClient(BinanceClientConfig config) {
-            
             handleResult(
                 ExchangeClient.InitBinance(config, out var client_handle)
             );
@@ -476,6 +496,19 @@ namespace OpenLimits
             ));
         }
 
+        unsafe public Order GetOrder(string orderId, string market) {
+            handleResult(ExchangeClient.GetOrder(
+                _client_handle,
+                orderId,
+                market,
+                out var result
+            ));
+
+            var order = result.ToOrder();
+            result.Dispose();
+            return order;
+        }
+
         unsafe public void CancelOrder(string orderId) {
             CancelOrder(orderId, null);
         }
@@ -638,8 +671,8 @@ namespace OpenLimits
             OnError onError,
             OnPing onPing
         ) {
-            this.onErrorCB = onError;
-            this.onPingCB = onPing;
+            this.onErrorCbs.Add(onError);
+            this.onPingCbs.Add(onPing);
 
             this.SetupEWH();
 
@@ -662,6 +695,10 @@ namespace OpenLimits
             callbacks.Add(onTrades);
             handleFFIResult(SubscribeToTrades(this._client_handle, this._sub_handle, market));
             this.SetupEWH();
+        }
+
+        public void SubscribeToDisconnect(OnDisconnect cb) {
+            this.onDisconnectCbs.Add(cb);
         }
 
         unsafe public void Disconnect() {

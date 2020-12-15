@@ -58,7 +58,10 @@ namespace OpenLimitsTest
             TestContext.Progress.WriteLine("GetHistoricRates: " + client.GetHistoricTrades(new GetHistoricTradesRequest("btc_usdc")));
             TestContext.Progress.WriteLine("GetOrderHistory btc_usdc: " + client.GetOrderHistory(new GetOrderHistoryRequest("btc_usdc")));
             client.CancelAllOrders("btc_usdc");
-            TestContext.Progress.WriteLine("Limit sell: " + client.LimitSell(LimitOrderRequest.goodTillCancelled("6500.0", "0.01000", "btc_usdc")));
+            var order = client.LimitSell(LimitOrderRequest.goodTillCancelled("6500.0", "0.01000", "btc_usdc"));
+            
+            TestContext.Progress.WriteLine("Limit sell: " + order);
+            TestContext.Progress.WriteLine("Get order", client.GetOrder(order.id, order.marketPair));
             TestContext.Progress.WriteLine("Limit buy: " + client.LimitBuy(LimitOrderRequest.goodTillCancelled("6500.0", "0.01000", "btc_usdc")));
             TestContext.Progress.WriteLine("Limit buy fok: " + client.LimitSell(LimitOrderRequest.fillOrKill("6500.0", "0.01000", "btc_usdc")));
             TestContext.Progress.WriteLine("Limit buy ioc: " + client.LimitSell(LimitOrderRequest.immediateOrCancel("6500.0", "0.01000", "btc_usdc")));
