@@ -25,15 +25,15 @@ namespace OpenLimitsTestApp
             NashClientConfig config = NashClientConfig.Unauthenticated(0, NashEnvironment.Production, 1000);
             var client = new ExchangeClient(config);
 
-            Console.WriteLine("Available markets");
+            client.SubscribeToDisconnect(() => {
+                Console.WriteLine("Disconnected");
+            });
             foreach(var market in client.ReceivePairs()) {
-                Console.WriteLine("Market: " + market.symbol);
-                PrintBook(client.Orderbook(market.symbol));
+                client.SubscribeToOrderbook(market.symbol, PrintBook);
             }
-            
-            Console.WriteLine("Listening to the btc_usdc market");
-            PrintBook(client.Orderbook("btc_usdc"));
-            client.SubscribeToOrderbook("btc_usdc", PrintBook);
+
+            GC.Collect();  
+            GC.WaitForPendingFinalizers();
             
             // Noia markets only available in NashEnvironment.Production
             // Console.WriteLine("Listening to the noia markets");

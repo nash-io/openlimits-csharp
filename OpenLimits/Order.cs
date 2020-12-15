@@ -12,6 +12,7 @@ namespace OpenLimits
         public readonly OrderStatus status;
         public readonly double size;
         public readonly double price;
+        public readonly double remaining;
 
         public void Dispose() {
             ExchangeClient.FreeString(id);
@@ -29,7 +30,8 @@ namespace OpenLimits
                 this.side,
                 this.status,
                 this.size,
-                this.price
+                this.price,
+                this.remaining
             );
         }
     }
@@ -45,8 +47,9 @@ namespace OpenLimits
         public readonly OrderStatus status;
         public readonly double size;
         public readonly double price;
+        public readonly double remaining;
 
-        public Order(string id, string marketPair, string clientOrderId, ulong createdAt, OrderType orderType, Side side, OrderStatus status, double size, double price)
+        public Order(string id, string marketPair, string clientOrderId, ulong createdAt, OrderType orderType, Side side, OrderStatus status, double size, double price, double remaining)
         {
             this.id = id;
             this.marketPair = marketPair;
@@ -57,6 +60,7 @@ namespace OpenLimits
             this.status = status;
             this.size = size;
             this.price = price;
+            this.remaining = remaining;
         }
 
         public override bool Equals(object obj)
@@ -81,6 +85,7 @@ namespace OpenLimits
                 ", status='" + status + '\'' +
                 ", size='" + size + '\'' +
                 ", price='" + price + '\'' +
+                ", remaining='" + remaining + '\'' +
                 '}';
         }
     }
