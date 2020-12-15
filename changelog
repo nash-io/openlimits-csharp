@@ -1,3 +1,8 @@
+v0.1.13
+
+- Expose GetOrder
+- Fix error causing subscripton delegates to be garbage collected
+
 v0.1.10
 
 - Upgrade to newest version of  openlimits
