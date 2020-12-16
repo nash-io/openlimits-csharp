@@ -1,3 +1,7 @@
+v0.1.14
+
+- Change double fields of AskBid, Trade and Order to decimal
+
 v0.1.13
 
 - Expose GetOrder
