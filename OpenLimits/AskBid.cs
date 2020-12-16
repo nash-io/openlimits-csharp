@@ -1,16 +1,41 @@
 namespace OpenLimits
 {
+    using System;
     using System.Runtime.InteropServices;
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct AskBid
+    internal struct FFIAskBid
     {
-        public readonly double price;
-        public readonly double qty;
+        public readonly IntPtr price;
+        public readonly IntPtr qty;
 
-        public AskBid(double price, double qty)
+        public FFIAskBid(IntPtr price, IntPtr qty)
         {
             this.price = price;
             this.qty = qty;
+        }
+
+        public void Dispose() {
+            ExchangeClient.FreeString(price);
+            ExchangeClient.FreeString(qty);
+        }
+
+        public AskBid ToAskBid() {
+            return new AskBid(
+                CString.ToString(this.price),
+                CString.ToString(this.qty)
+            );
+        }
+    }
+
+    public struct AskBid
+    {
+        public readonly decimal price;
+        public readonly decimal qty;
+
+        public AskBid(string price, string qty)
+        {
+            this.price = Decimal.Parse(price);
+            this.qty = Decimal.Parse(qty);
         }
 
         public override string ToString()

@@ -10,14 +10,16 @@ namespace OpenLimits
         public readonly OrderType orderType;
         public readonly Side side;
         public readonly OrderStatus status;
-        public readonly double size;
-        public readonly double price;
-        public readonly double remaining;
+        public readonly IntPtr size;
+        public readonly IntPtr price;
+        public readonly IntPtr remaining;
 
         public void Dispose() {
             ExchangeClient.FreeString(id);
             ExchangeClient.FreeString(marketPair);
-            ExchangeClient.FreeString(clientOrderId);
+            ExchangeClient.FreeString(size);
+            ExchangeClient.FreeString(price);
+            ExchangeClient.FreeString(remaining);
         }
 
         public Order ToOrder() {
@@ -29,9 +31,9 @@ namespace OpenLimits
                 this.orderType,
                 this.side,
                 this.status,
-                this.size,
-                this.price,
-                this.remaining
+                CString.ToString(this.size),
+                CString.ToString(this.price),
+                CString.ToString(this.remaining)
             );
         }
     }
@@ -45,11 +47,11 @@ namespace OpenLimits
         public readonly OrderType orderType;
         public readonly Side side;
         public readonly OrderStatus status;
-        public readonly double size;
-        public readonly double price;
-        public readonly double remaining;
+        public readonly decimal size;
+        public readonly decimal? price;
+        public readonly decimal? remaining;
 
-        public Order(string id, string marketPair, string clientOrderId, ulong createdAt, OrderType orderType, Side side, OrderStatus status, double size, double price, double remaining)
+        public Order(string id, string marketPair, string clientOrderId, ulong createdAt, OrderType orderType, Side side, OrderStatus status, string size, string price, string remaining)
         {
             this.id = id;
             this.marketPair = marketPair;
@@ -58,9 +60,10 @@ namespace OpenLimits
             this.orderType = orderType;
             this.side = side;
             this.status = status;
-            this.size = size;
-            this.price = price;
-            this.remaining = remaining;
+            
+            this.size = decimal.Parse(size);
+            this.price = price == null ? default(decimal?) : decimal.Parse(price);
+            this.remaining = remaining == null ? default(decimal?) : decimal.Parse(remaining);
         }
 
         public override bool Equals(object obj)

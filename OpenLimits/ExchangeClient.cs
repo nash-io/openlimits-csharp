@@ -74,8 +74,8 @@ namespace OpenLimits
         }
         /// Used by rust to write data directly to C# thus avoiding changing ownership
         private FFITrade[] subTradesBuff = new FFITrade[1024];
-        private AskBid[] subAsksBuff = new AskBid[1024];
-        private AskBid[] subBidsBuff = new AskBid[1024];
+        private FFIAskBid[] subAsksBuff = new FFIAskBid[1024];
+        private FFIAskBid[] subBidsBuff = new FFIAskBid[1024];
 
         // Callbacks from rust into C#. Some callbacks come in a "private" and public version.
         // Some objects, especially those containing strings or array of objects will be serialized into a
@@ -259,11 +259,13 @@ namespace OpenLimits
 
             
             for (int i = 0 ; i < (int)bidActualValueLen ; i ++) {
-                bidsList.Add(subBidsBuff[i]);
+                bidsList.Add(subBidsBuff[i].ToAskBid());
+                subBidsBuff[i].Dispose();
             }
             
             for (int i = 0 ; i < (int)askActualValueLen ; i ++) {
-                asksList.Add(subAsksBuff[i]);
+                asksList.Add(subAsksBuff[i].ToAskBid());
+                subAsksBuff[i].Dispose();
             }
 
             if (!onOrderbookCbs.ContainsKey(market)) {
@@ -295,8 +297,8 @@ namespace OpenLimits
 
         unsafe private IntPtr InitCbs() {
             _clients.Add(this);
-            fixed (AskBid* bidBuff = subBidsBuff.AsSpan()) {
-                fixed (AskBid* askBuff = subAsksBuff.AsSpan()) {
+            fixed (FFIAskBid* bidBuff = subBidsBuff.AsSpan()) {
+                fixed (FFIAskBid* askBuff = subAsksBuff.AsSpan()) {
                     fixed (FFITrade* tradeBuff = subTradesBuff.AsSpan()) {
                         this.onOrderbookCb = this.onOrderbookHandler;
                         this.onTradesCb = this.onTradesHandler;
@@ -352,8 +354,8 @@ namespace OpenLimits
             return price;
         }
         unsafe public OrderbookResponse Orderbook(string market) {
-            var bids = new AskBid[512];
-            var asks = new AskBid[512];
+            var bids = new FFIAskBid[512];
+            var asks = new FFIAskBid[512];
             var bidsLen = bids.Length;
             var asksLen = asks.Length;
             var bidsList = new List<AskBid>();
@@ -361,8 +363,8 @@ namespace OpenLimits
             ulong lastUpdateId = 0;
             ulong updateId = 0;
 
-            fixed (AskBid* bidBuff = bids.AsSpan()) {
-                fixed (AskBid* askBuff = asks.AsSpan()) {
+            fixed (FFIAskBid* bidBuff = bids.AsSpan()) {
+                fixed (FFIAskBid* askBuff = asks.AsSpan()) {
                     handleResult(
                         ExchangeClient.Orderbook(
                             _client_handle,
@@ -374,10 +376,12 @@ namespace OpenLimits
                         )
                     );
                     for (int i = 0 ; i < Math.Min(bidsLen, (int)actualBidsLen) ; i ++) {
-                        bidsList.Add(bids[i]);
+                        bidsList.Add(bids[i].ToAskBid());
+                        bids[i].Dispose();
                     }
                     for (int i = 0 ; i < Math.Min(asksLen, (int)actualAsksLen) ; i ++) {
-                        asksList.Add(asks[i]);
+                        asksList.Add(asks[i].ToAskBid());
+                        asks[i].Dispose();
                     }
                 }
             }

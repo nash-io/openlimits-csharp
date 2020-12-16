@@ -12,9 +12,9 @@ namespace OpenLimits
         public readonly IntPtr sellerOrderId;
         public readonly IntPtr marketPair;
 
-        public readonly double price;
-        public readonly double qty;
-        public readonly double fees;
+        public readonly IntPtr price;
+        public readonly IntPtr qty;
+        public readonly IntPtr fees;
         public readonly Side side;
         public readonly Liquidity liquidity;
         public readonly ulong createdAt;
@@ -24,6 +24,9 @@ namespace OpenLimits
             ExchangeClient.FreeString(buyerOrderId);
             ExchangeClient.FreeString(sellerOrderId);
             ExchangeClient.FreeString(marketPair);
+            ExchangeClient.FreeString(price);
+            ExchangeClient.FreeString(qty);
+            ExchangeClient.FreeString(fees);
         }
 
         public Trade ToTrade() {
@@ -32,9 +35,9 @@ namespace OpenLimits
                 CString.ToString(this.buyerOrderId),
                 CString.ToString(this.sellerOrderId),
                 CString.ToString(this.marketPair),
-                this.price,
-                this.qty,
-                this.fees,
+                CString.ToString(this.price),
+                CString.ToString(this.qty),
+                CString.ToString(this.fees),
                 this.side,
                 this.liquidity,
                 this.createdAt
@@ -47,22 +50,23 @@ namespace OpenLimits
         public readonly string buyerOrderId;
         public readonly string sellerOrderId;
         public readonly string marketPair;
-        public readonly double price;
-        public readonly double qty;
-        public readonly double fees;
+        public readonly decimal price;
+        public readonly decimal qty;
+        public readonly decimal? fees;
+
         public readonly Side side;
         public readonly Liquidity liquidity;
         public readonly ulong createdAt;
 
-        public Trade(string id, string buyerOrderId, string sellerOrderId, string marketPair, double price, double qty, double fees, Side side, Liquidity liquidity, ulong createdAt)
+        public Trade(string id, string buyerOrderId, string sellerOrderId, string marketPair, string price, string qty, string fees, Side side, Liquidity liquidity, ulong createdAt)
         {
             this.id = id;
             this.buyerOrderId = buyerOrderId;
             this.sellerOrderId = sellerOrderId;
             this.marketPair = marketPair;
-            this.price = price;
-            this.qty = qty;
-            this.fees = fees;
+            this.price = decimal.Parse(price);
+            this.qty = decimal.Parse(qty);
+            this.fees = fees == null ?  default(decimal?): decimal.Parse(fees);
             this.side = side;
             this.liquidity = liquidity;
             this.createdAt = createdAt;
