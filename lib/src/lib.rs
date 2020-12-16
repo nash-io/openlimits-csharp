@@ -334,8 +334,8 @@ fn result_to_ffi(r: Result<(), OpenlimitsSharpError>) -> OpenLimitsResult {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct FFIAskBid {
-  pub price: f64,
-  pub qty: f64,
+  pub price: *mut c_char,
+  pub qty: *mut c_char,
 }
 
 #[repr(u32)]
@@ -430,9 +430,9 @@ pub struct FFITrade {
   buyer_order_id: *mut c_char,
   seller_order_id: *mut c_char,
   market_pair: *mut c_char,
-  price: f64,
-  qty: f64,
-  fees: f64,
+  price: *mut c_char,
+  qty: *mut c_char,
+  fees: *mut c_char,
   side: FFISide,
   liquidity: FFILiquidity,
   created_at: u64,
@@ -448,9 +448,9 @@ pub struct FFIOrder {
   pub order_type: FFIOrderType,
   pub side: FFISide,
   pub status: FFIOrderStatus,
-  pub size: f64,
-  pub price: f64,
-  pub remaining: f64,
+  pub size: *mut c_char,
+  pub price: *mut c_char,
+  pub remaining: *mut c_char,
 }
 
 fn order_to_ffi(t: Order) -> FFIOrder {
@@ -471,14 +471,14 @@ fn order_to_ffi(t: Order) -> FFIOrder {
       Side::Sell => FFISide::Sell,
     },
     status: order_status_to_ffi(t.status),
-    size: t.size.to_f64().unwrap_or_default(),
+    size: string_to_c_str(t.size.to_string()),
     price: match t.price {
-      Some(price) => price.to_f64().unwrap_or_default(),
-      None => std::f64::NAN
+      Some(price) => string_to_c_str(price.to_string()),
+      None => std::ptr::null_mut()
     },
     remaining: match t.remaining {
-      Some(rem) =>  rem.to_f64().unwrap_or_default(),
-      None => std::f64::NAN
+      Some(rem) =>  string_to_c_str(rem.to_string()),
+      None => std::ptr::null_mut()
     }
   }
 }
@@ -493,8 +493,8 @@ pub struct FFIGetHistoricTradesRequest {
 
 fn to_ffi_ask_bid(f: &AskBid) -> FFIAskBid {
   FFIAskBid {
-    price: f.price.to_f64().unwrap(),
-    qty: f.qty.to_f64().unwrap()
+    price: string_to_c_str(f.price.to_string()),
+    qty: string_to_c_str(f.qty.to_string())
   }
 }
 
@@ -522,11 +522,11 @@ fn to_ffi_trade(f: &Trade) -> FFITrade {
     buyer_order_id: option_string_to_c_str(f.buyer_order_id.clone()),
     seller_order_id: option_string_to_c_str(f.seller_order_id.clone()),
     market_pair: string_to_c_str(f.market_pair.clone()),
-    price: f.price.to_f64().unwrap_or_default(),
-    qty: f.qty.to_f64().unwrap_or_default(),
+    price: string_to_c_str(f.price.to_string()),
+    qty: string_to_c_str(f.qty.to_string()),
     fees: match f.fees {
-      Some(f) => f.to_f64().unwrap_or_default(),
-      None => 0.0,
+      Some(f) => string_to_c_str(f.to_string()),
+      None => std::ptr::null_mut(),
     },
     side: match f.side {
       Side::Buy => FFISide::Buy,

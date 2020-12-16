@@ -1,8 +1,8 @@
 namespace OpenLimits {
     using System.Collections.Generic;
     public class Orderbook {
-        private readonly Dictionary<double, double> _bids = new Dictionary<double, double>();
-        private readonly Dictionary<double, double> _asks = new Dictionary<double, double>();
+        private readonly Dictionary<decimal, decimal> _bids = new Dictionary<decimal, decimal>();
+        private readonly Dictionary<decimal, decimal> _asks = new Dictionary<decimal, decimal>();
         
         public void Update(OrderbookResponse changes) {
             foreach(var ask in changes.asks) {
