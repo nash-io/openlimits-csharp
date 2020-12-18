@@ -2,7 +2,7 @@ namespace OpenLimits
 {
     using System.Runtime.InteropServices;
     using System;
-    using System.Text;
+    using System.Globalization;
 
 
     [StructLayout(LayoutKind.Sequential)]
@@ -64,9 +64,9 @@ namespace OpenLimits
             this.buyerOrderId = buyerOrderId;
             this.sellerOrderId = sellerOrderId;
             this.marketPair = marketPair;
-            this.price = decimal.Parse(price);
-            this.qty = decimal.Parse(qty);
-            this.fees = fees == null ?  default(decimal?): decimal.Parse(fees);
+            this.price = decimal.Parse(price, System.Globalization.NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+            this.qty = decimal.Parse(qty, System.Globalization.NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+            this.fees = fees == null ?  default(decimal?): decimal.Parse(fees, System.Globalization.NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
             this.side = side;
             this.liquidity = liquidity;
             this.createdAt = createdAt;

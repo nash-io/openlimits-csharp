@@ -2,6 +2,7 @@ namespace OpenLimits
 {
     using System;
     using System.Runtime.InteropServices;
+    using System.Globalization;
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     internal struct FFIAskBid
     {
@@ -34,8 +35,8 @@ namespace OpenLimits
 
         public AskBid(string price, string qty)
         {
-            this.price = Decimal.Parse(price);
-            this.qty = Decimal.Parse(qty);
+            this.price = Decimal.Parse(price, System.Globalization.NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+            this.qty = Decimal.Parse(qty, System.Globalization.NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
         }
 
         public override string ToString()
