@@ -1,6 +1,8 @@
 namespace OpenLimits
 {
     using System;
+    using System.Globalization;
+
     internal struct FFIOrder
     {
         public readonly IntPtr id;
@@ -61,9 +63,9 @@ namespace OpenLimits
             this.side = side;
             this.status = status;
             
-            this.size = decimal.Parse(size);
-            this.price = price == null ? default(decimal?) : decimal.Parse(price);
-            this.remaining = remaining == null ? default(decimal?) : decimal.Parse(remaining);
+            this.size = decimal.Parse(size, System.Globalization.NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+            this.price = price == null ? default(decimal?) : decimal.Parse(price, System.Globalization.NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+            this.remaining = remaining == null ? default(decimal?) : decimal.Parse(remaining, System.Globalization.NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
         }
 
         public override bool Equals(object obj)

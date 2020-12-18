@@ -6,7 +6,7 @@ use openlimits::{
   exchange::{OpenLimits, ExchangeAccount, ExchangeMarketData}, 
   exchange_ws::OpenLimitsWs, 
   exchange_info::{MarketPair, ExchangeInfoRetrieval},
-  errors::OpenLimitError,
+  errors::OpenLimitsError,
   any_exchange::{AnyExchange, InitAnyExchange, AnyWsExchange},
   nash::{
     NashCredentials,
@@ -209,7 +209,7 @@ pub enum OpenlimitsSharpError {
   #[error("Failed to subscribe: {0}")]
   SubscribeException(String),
   #[error("{0}")]
-  OpenLimitsError(#[from] OpenLimitError)
+  OpenLimitsError(#[from] OpenLimitsError)
 }
 
 #[repr(u32)]
@@ -267,62 +267,62 @@ fn result_to_ffi(r: Result<(), OpenlimitsSharpError>) -> OpenLimitsResult {
         OpenlimitsSharpError::SubscribeException(msg) => OpenLimitsResult { tag: OpenLimitsResultTag::SubscribeException, message: string_to_c_str(msg) },
         OpenlimitsSharpError::OpenLimitsError(e) => {
           let message = match &e {
-            OpenLimitError::BinanceError(e) => e.msg.clone(),
-            OpenLimitError::CoinbaseError(e) => e.message.clone(),
-            OpenLimitError::NashProtocolError(e) => e.0.to_string(),
-            OpenLimitError::MissingImplementation(e) => e.message.clone(),
-            OpenLimitError::AssetNotFound() => String::from("Asset not found"),
-            OpenLimitError::NoApiKeySet() => String::from("No api key set"),
-            OpenLimitError::InternalServerError() => String::from("Internal server error"),
-            OpenLimitError::ServiceUnavailable() => String::from("Service unavailable"),
-            OpenLimitError::Unauthorized() => String::from("Unauthorized"),
-            OpenLimitError::SymbolNotFound() => String::from("Symbol not found"),
-            OpenLimitError::SocketError() => String::from("Socket error"),
-            OpenLimitError::GetTimestampFailed() => String::from("Get timestamp failed"),
-            OpenLimitError::ReqError(e) => e.to_string(),
-            OpenLimitError::InvalidHeaderError(e) => e.to_string(),
-            OpenLimitError::InvalidPayloadSignature(e) => e.to_string(),
-            OpenLimitError::IoError(e) => e.to_string(),
-            OpenLimitError::PoisonError() => String::from("Poison error"),
-            OpenLimitError::JsonError(e) => e.to_string(),
-            OpenLimitError::ParseFloatError(e) => e.to_string(),
-            OpenLimitError::UrlParserError(e) => e.to_string(),
-            OpenLimitError::Tungstenite(e) => e.to_string(),
-            OpenLimitError::TimestampError(e) => e.to_string(),
-            OpenLimitError::UnkownResponse(e) => e.clone(),
-            OpenLimitError::NotParsableResponse(e) => e.clone(),
-            OpenLimitError::MissingParameter(e) => e.clone(),
-            OpenLimitError::WebSocketMessageNotSupported() => String::from("WebSocket message not supported"),
-            OpenLimitError::NoMarketPair => String::from("No market pair")
+            OpenLimitsError::BinanceError(e) => e.msg.clone(),
+            OpenLimitsError::CoinbaseError(e) => e.message.clone(),
+            OpenLimitsError::NashProtocolError(e) => e.0.to_string(),
+            OpenLimitsError::MissingImplementation(e) => e.message.clone(),
+            OpenLimitsError::AssetNotFound() => String::from("Asset not found"),
+            OpenLimitsError::NoApiKeySet() => String::from("No api key set"),
+            OpenLimitsError::InternalServerError() => String::from("Internal server error"),
+            OpenLimitsError::ServiceUnavailable() => String::from("Service unavailable"),
+            OpenLimitsError::Unauthorized() => String::from("Unauthorized"),
+            OpenLimitsError::SymbolNotFound() => String::from("Symbol not found"),
+            OpenLimitsError::SocketError() => String::from("Socket error"),
+            OpenLimitsError::GetTimestampFailed() => String::from("Get timestamp failed"),
+            OpenLimitsError::ReqError(e) => e.to_string(),
+            OpenLimitsError::InvalidHeaderError(e) => e.to_string(),
+            OpenLimitsError::InvalidPayloadSignature(e) => e.to_string(),
+            OpenLimitsError::IoError(e) => e.to_string(),
+            OpenLimitsError::PoisonError() => String::from("Poison error"),
+            OpenLimitsError::JsonError(e) => e.to_string(),
+            OpenLimitsError::ParseFloatError(e) => e.to_string(),
+            OpenLimitsError::UrlParserError(e) => e.to_string(),
+            OpenLimitsError::Tungstenite(e) => e.to_string(),
+            OpenLimitsError::TimestampError(e) => e.to_string(),
+            OpenLimitsError::UnkownResponse(e) => e.clone(),
+            OpenLimitsError::NotParsableResponse(e) => e.clone(),
+            OpenLimitsError::MissingParameter(e) => e.clone(),
+            OpenLimitsError::WebSocketMessageNotSupported() => String::from("WebSocket message not supported"),
+            OpenLimitsError::NoMarketPair => String::from("No market pair")
           };
           let tag = match &e {
-            OpenLimitError::BinanceError(_) => OpenLimitsResultTag::BinanceError,
-            OpenLimitError::CoinbaseError(_) => OpenLimitsResultTag::CoinbaseError,
-            OpenLimitError::NashProtocolError(_) => OpenLimitsResultTag::NashProtocolError,
-            OpenLimitError::MissingImplementation(_) => OpenLimitsResultTag::MissingImplementation,
-            OpenLimitError::AssetNotFound() => OpenLimitsResultTag::AssetNotFound,
-            OpenLimitError::NoApiKeySet() => OpenLimitsResultTag::NoApiKeySet,
-            OpenLimitError::InternalServerError() => OpenLimitsResultTag::InternalServerError,
-            OpenLimitError::ServiceUnavailable() => OpenLimitsResultTag::ServiceUnavailable,
-            OpenLimitError::Unauthorized() => OpenLimitsResultTag::Unauthorized,
-            OpenLimitError::SymbolNotFound() => OpenLimitsResultTag::SymbolNotFound,
-            OpenLimitError::SocketError() => OpenLimitsResultTag::SocketError,
-            OpenLimitError::GetTimestampFailed() => OpenLimitsResultTag::GetTimestampFailed,
-            OpenLimitError::ReqError(_) => OpenLimitsResultTag::ReqError,
-            OpenLimitError::InvalidHeaderError(_) => OpenLimitsResultTag::InvalidHeaderError,
-            OpenLimitError::InvalidPayloadSignature(_) => OpenLimitsResultTag::InvalidPayloadSignature,
-            OpenLimitError::IoError(_) => OpenLimitsResultTag::IoError,
-            OpenLimitError::PoisonError() => OpenLimitsResultTag::PoisonError,
-            OpenLimitError::JsonError(_) => OpenLimitsResultTag::JsonError,
-            OpenLimitError::ParseFloatError(_) => OpenLimitsResultTag::ParseFloatError,
-            OpenLimitError::UrlParserError(_) => OpenLimitsResultTag::UrlParserError,
-            OpenLimitError::Tungstenite(_) => OpenLimitsResultTag::Tungstenite,
-            OpenLimitError::TimestampError(_) => OpenLimitsResultTag::TimestampError,
-            OpenLimitError::UnkownResponse(_) => OpenLimitsResultTag::UnkownResponse,
-            OpenLimitError::NotParsableResponse(_) => OpenLimitsResultTag::NotParsableResponse,
-            OpenLimitError::MissingParameter(_) => OpenLimitsResultTag::MissingParameter,
-            OpenLimitError::WebSocketMessageNotSupported() => OpenLimitsResultTag::WebSocketMessageNotSupported,
-            OpenLimitError::NoMarketPair => OpenLimitsResultTag::NoMarketPair,
+            OpenLimitsError::BinanceError(_) => OpenLimitsResultTag::BinanceError,
+            OpenLimitsError::CoinbaseError(_) => OpenLimitsResultTag::CoinbaseError,
+            OpenLimitsError::NashProtocolError(_) => OpenLimitsResultTag::NashProtocolError,
+            OpenLimitsError::MissingImplementation(_) => OpenLimitsResultTag::MissingImplementation,
+            OpenLimitsError::AssetNotFound() => OpenLimitsResultTag::AssetNotFound,
+            OpenLimitsError::NoApiKeySet() => OpenLimitsResultTag::NoApiKeySet,
+            OpenLimitsError::InternalServerError() => OpenLimitsResultTag::InternalServerError,
+            OpenLimitsError::ServiceUnavailable() => OpenLimitsResultTag::ServiceUnavailable,
+            OpenLimitsError::Unauthorized() => OpenLimitsResultTag::Unauthorized,
+            OpenLimitsError::SymbolNotFound() => OpenLimitsResultTag::SymbolNotFound,
+            OpenLimitsError::SocketError() => OpenLimitsResultTag::SocketError,
+            OpenLimitsError::GetTimestampFailed() => OpenLimitsResultTag::GetTimestampFailed,
+            OpenLimitsError::ReqError(_) => OpenLimitsResultTag::ReqError,
+            OpenLimitsError::InvalidHeaderError(_) => OpenLimitsResultTag::InvalidHeaderError,
+            OpenLimitsError::InvalidPayloadSignature(_) => OpenLimitsResultTag::InvalidPayloadSignature,
+            OpenLimitsError::IoError(_) => OpenLimitsResultTag::IoError,
+            OpenLimitsError::PoisonError() => OpenLimitsResultTag::PoisonError,
+            OpenLimitsError::JsonError(_) => OpenLimitsResultTag::JsonError,
+            OpenLimitsError::ParseFloatError(_) => OpenLimitsResultTag::ParseFloatError,
+            OpenLimitsError::UrlParserError(_) => OpenLimitsResultTag::UrlParserError,
+            OpenLimitsError::Tungstenite(_) => OpenLimitsResultTag::Tungstenite,
+            OpenLimitsError::TimestampError(_) => OpenLimitsResultTag::TimestampError,
+            OpenLimitsError::UnkownResponse(_) => OpenLimitsResultTag::UnkownResponse,
+            OpenLimitsError::NotParsableResponse(_) => OpenLimitsResultTag::NotParsableResponse,
+            OpenLimitsError::MissingParameter(_) => OpenLimitsResultTag::MissingParameter,
+            OpenLimitsError::WebSocketMessageNotSupported() => OpenLimitsResultTag::WebSocketMessageNotSupported,
+            OpenLimitsError::NoMarketPair => OpenLimitsResultTag::NoMarketPair,
           };
           OpenLimitsResult { tag, message: string_to_c_str(message) }
         },
@@ -602,7 +602,7 @@ pub struct ExchangeClient {
 pub struct InitResult {
   client: *mut ExchangeClient,
 }
-type SubResult = std::result::Result<openlimits::exchange_ws::CallbackHandle, openlimits::errors::OpenLimitError>;
+type SubResult = std::result::Result<openlimits::exchange_ws::CallbackHandle, openlimits::errors::OpenLimitsError>;
 type SubChannel = tokio::sync::oneshot::Sender<SubResult>;
 pub enum SubthreadCmd {
   Sub(Subscription, SubChannel),
@@ -738,7 +738,7 @@ pub  extern "cdecl" fn init_nash(
       affiliate_code,
       credentials,
       client_id,
-      timeout,
+      timeout: std::time::Duration::from_millis(timeout),
       environment
     };
 

@@ -68,6 +68,10 @@ namespace OpenLimitsTest
             TestContext.Progress.WriteLine("Market sell: " + client.MarketSell(new MarketOrderRequest("0.01000", "btc_usdc")));
             TestContext.Progress.WriteLine("Market sell inverse: " + client.MarketSell(new MarketOrderRequest("20", "usdc_btc")));
             client.CancelAllOrders("btc_usdc");
+
+            var order2 = client.LimitSell(LimitOrderRequest.goodTillCancelled("8000.0", "1.0000", "btc_usdc"));
+            TestContext.Progress.WriteLine("Limit sell: " + order2);
+            client.CancelOrder(order2.id, order2.marketPair);
         }
 
         [Test]
